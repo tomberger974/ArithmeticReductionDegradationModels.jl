@@ -1,0 +1,7 @@
+name = "ArithmeticReductionDegradationModels"
+uuid = "daa07e9f-121b-45a2-ae18-efc927d8cc78"
+authors = ["R cqls <rdrouilh@gmail.com>"]
+version = "0.0.1"
+
+[compat]
+julia = "1.11"

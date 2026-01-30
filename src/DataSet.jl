@@ -15,7 +15,7 @@ mutable struct DegradationData
     
     #All degradation information, at least 3 columns:
     #   DATE (Float64): time at which degradation is observed,
-    #   NB_MAINTENANCES (Int64): cummulative number of maintenance that have been done befor degradation observation,
+    #   NB_MAINTENANCES (Int64): cummulative number of maintenance that have been done before degradation observation,
     #   VALUE (Float64): observed degradation value,
     #other columns can be added, in particular 
     #   TYPE (String): an indicator to specify different type of degradation observations
@@ -37,9 +37,8 @@ mutable struct DegradationData
         maintenances::DataFrame, 
         degradations::DataFrame,
         infos::Dict{String, T} where T<: Any=Dict{String, Any}())
-
-            res = verifDegradationData(maintenances, degradations)
-            new(convert(Dict{String, Any}, infos), res[1], res[2])
+        res = verifDegradationData(maintenances, degradations)
+        new(convert(Dict{String, Any}, infos), res[1], res[2])
     end
 end
 
@@ -96,6 +95,98 @@ function verifDegradationData(maintenances::DataFrame, degradations::DataFrame)
         end
     end 
     return (maintenances, degradations)
+end
+
+function DegradationData(maintenanceDates::Vector{Float64}, Δt::Float64, t_max::Float64=maintenanceDates[end], maintenanceTypes::Vector{String}=fill("",length(maintenanceDates)); imaint_from::Int64=0, t_from::Float64=0.)
+
+    #to avoid errors
+    if Δt <= 0.
+        error("Time increment Δt must be positiv")
+    end
+    if length(maintenanceDates) != length(maintenanceTypes)
+        error("Vectors of maintenancesDates and maintenancesTypes must have the same length.")
+    end
+
+    #initialize vectors
+    degDates = Vector{Float64}()
+    degNbMaint = Vector{Int64}()
+    degTypes = Vector{String}()
+
+    #In case where we want our observations to begin at maintenance imaint_from
+    if imaint_from == 0
+        maint = vcat(0,maintenanceDates[1:end])
+    else
+        maint = maintenanceDates[imaint_from:end]
+    end
+
+    for (jj,τ) in enumerate(maint)
+        
+        #we don't want to go farther than t_max
+        if τ > t_max 
+            break
+        end
+        
+        #reindex j so that we begin at i_maint_from
+        j = jj + imaint_from
+
+        #create the "After" rows
+        if (τ >= t_from)
+            degDates = vcat(degDates, τ)
+            degNbMaint = vcat(degNbMaint, j-1)
+            degTypes = vcat(degTypes, "After")
+        end
+
+
+        #original code
+        #t = max(t_from, τ + Δt)
+
+        #my code
+        if jj == 0
+            t = max(t_from, τ + Δt)
+        else
+            t = t_from
+            while t <= τ
+                t += Δt
+            end
+        end
+
+
+        τ_suiv = j <= length(maintenanceDates) ? maintenanceDates[j] : t_max
+        while t < min(τ_suiv, t_max)
+            degDates = vcat(degDates, t)
+            degNbMaint = vcat(degNbMaint, j-1)
+            degTypes = vcat(degTypes, "Between")
+            t += Δt
+        end
+        if j <= length(maintenanceDates)
+            if (τ_suiv >= t_from) && (τ_suiv <= t_max)
+                if maintenanceDates[j] < t_max
+                    degTypes = vcat(degTypes,  "Before" )
+                else
+                    degTypes = vcat(degTypes,  "Between" )
+                end
+                degDates = vcat(degDates, τ_suiv)
+                degNbMaint = vcat(degNbMaint, j-1)
+            end
+        else
+            if (maintenanceDates[end] < t_max) && (t >= t_from) && (t <= t_max)
+                degTypes = vcat(degTypes,  "Between" )
+                degDates = vcat(degDates, t)
+                degNbMaint = vcat(degNbMaint, j-1)
+            end
+        end
+    end  
+
+    if (!isempty(degDates)) && (degDates[1] == 0.)
+        degDates = degDates[2:end] # remove value of the degraddation at time 0
+        degNbMaint = degNbMaint[2:end]
+        degTypes = degTypes[2:end]
+    end
+    
+    return DegradationData(
+        DataFrame(DATE = maintenanceDates, TYPE = maintenanceTypes),
+        DataFrame(DATE = degDates, NB_MAINTENANCES = degNbMaint, VALUE = fill(0.,length(degDates)), TYPE = degTypes)
+        )
 end
 
 """

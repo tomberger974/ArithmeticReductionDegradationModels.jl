@@ -1,4 +1,4 @@
-using ARDmodels
+using ArithmeticReductionDegradationModels
 using CairoMakie
 using DataFrames
 using Random

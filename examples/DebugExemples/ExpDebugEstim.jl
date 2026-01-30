@@ -1,5 +1,5 @@
 using DataFrames
-using ARDmodels
+using ArithmeticReductionDegradationModels
 using CSV
 using Distributions
 

@@ -1,6 +1,6 @@
 using DataFrames
 using CairoMakie
-using ARDmodels
+using ArithmeticReductionDegradationModels
 
 m = WienerARD∞()
 params(m)

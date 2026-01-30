@@ -1,5 +1,5 @@
 using CSV
-using ARDmodels
+using ArithmeticReductionDegradationModels
 using CairoMakie
 using DataFrames
 

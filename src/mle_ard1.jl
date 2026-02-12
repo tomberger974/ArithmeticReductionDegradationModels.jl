@@ -1,3 +1,4 @@
+#####MONO-SYSTEM ESTIMATORS#####
 function coefficient(ρ::Vector{Float64}, degradationdata::DegradationData, used_wienerARD1::WienerARD1)
     deg = vcat(DataFrame(DATE = 0., NB_MAINTENANCES = 0, VALUE = 0., TYPE = "Between"), degradationdata.degradations)
     maint = degradationdata.maintenances
@@ -139,6 +140,128 @@ end
 
 function fit_mle!(wienerARD1::WienerARD1, degradationdata::DegradationData)
     wienerARD1 = fit_mle(wienerARD1, degradationdata)
+    
+    return wienerARD1
+end
+
+#####MULTI-SYSTEM ESTIMATORS#####
+function coefficient(ρ::Vector{Float64}, multiple_degradationdata::Vector{DegradationData}, used_wienerARD1::WienerARD1)
+    nb_systeme = length(multiple_degradationdata)
+    multiple_a = Vector{Vector{Float64}}(undef, nb_systeme)
+    multiple_M = Vector{Vector{Float64}}(undef, nb_systeme)
+    multiple_V = Vector{Vector{Float64}}(undef, nb_systeme)
+    multiple_C = Vector{Vector{Float64}}(undef, nb_systeme)
+    
+    for i in eachindex(multiple_degradationdata)
+        multiple_a[i], multiple_M[i], multiple_V[i], multiple_C[i] = coefficient(ρ, multiple_degradationdata[i], used_wienerARD1)[1:4]
+    end
+    
+    return [multiple_a, multiple_M, multiple_V, multiple_C]
+end
+
+function fit_mle_drift(multiple_degradationdata::Vector{DegradationData}, multiple_a::Vector{Vector{Float64}}, multiple_M::Vector{Vector{Float64}}, multiple_Σ_minus1::Vector{Matrix{Float64}})
+    S1, S2 = 0., 0.
+    
+    for l in eachindex(multiple_degradationdata)
+        deg = multiple_degradationdata[l].degradations
+        maint = multiple_degradationdata[l].maintenances
+        
+        ν = filter(n -> n in deg.NB_MAINTENANCES, 0:nrow(maint)) #creates the vector ν
+        K = length(ν)
+        
+        if ν[1] == 0#if there is an observation before first maintenance, need to add first_obs - 0 as increment
+            S1 += deg.VALUE[1]
+            S2 += deg.DATE[1]
+        end
+        
+        for i in 1:K
+            ν_ith_deg = filter(row -> row.NB_MAINTENANCES == ν[i], deg)#keep only the observations between \nu[i]-1 and \nu[i]
+            if nrow(ν_ith_deg) != 1
+                S1 += ν_ith_deg.VALUE[end] - ν_ith_deg.VALUE[1]
+                S2 += ν_ith_deg.DATE[end] - ν_ith_deg.DATE[1]
+            end
+        end
+    end
+    
+    return (S1 + sum(dot.(multiple_M, multiple_Σ_minus1 .* multiple_a))) / (S2 + sum(dot.(multiple_M, multiple_Σ_minus1 .* multiple_M)))
+end
+
+function fit_mle_dispersion(multiple_degradationdata::Vector{DegradationData}, multiple_a::Vector{Vector{Float64}}, multiple_M::Vector{Vector{Float64}}, multiple_Σ_minus1::Vector{Matrix{Float64}}, drift::Float64)
+    S = 0.
+    N = 0
+    
+    for l in eachindex(multiple_degradationdata)
+        deg = multiple_degradationdata[l].degradations
+        maint = multiple_degradationdata[l].maintenances
+        N += nrow(deg)
+        
+        ν = filter(n -> n in deg.NB_MAINTENANCES, 0:nrow(maint)) #creates the vector ν
+        K = length(ν)
+        
+        if ν[1] == 0
+            S += (deg.VALUE[1] - drift * deg.DATE[1])^2 / deg.DATE[1]
+        end
+        
+        for i in 1:K
+            ν_ith_deg = filter(row -> row.NB_MAINTENANCES == ν[i], deg)#keep only the observations between \nu[i]-1 and \nu[i]
+            if nrow(ν_ith_deg) != 1
+                Δt_ν_i = diff(ν_ith_deg.DATE)
+                ΔY_ν_i = diff(ν_ith_deg.VALUE)
+                S += sum((ΔY_ν_i .- drift .* Δt_ν_i).^2 ./ Δt_ν_i)
+            end
+        end
+        
+        V = multiple_a[l] .- drift .* multiple_M[l]
+        S += dot(V, multiple_Σ_minus1[l] * V)
+    end
+    
+    return S / N
+end
+
+function fit_mle_maintenance_effect(used_wienerARD1::WienerARD1, multiple_degradationdata::Vector{DegradationData})
+    N = 0
+    for degradationdata in multiple_degradationdata
+        N += nrow(degradationdata.degradations)
+    end
+    
+    initial_ρ = used_wienerARD1.maintenances.VALUE
+    
+    function f(ρ)
+        multiple_a, multiple_M, multiple_V, multiple_C = coefficient(ρ, multiple_degradationdata, used_wienerARD1)[1:4]
+        multiple_Σ = Tridiagonal.(.-multiple_C, multiple_V, .-multiple_C)
+        multiple_Σ_minus1 = inv.(multiple_Σ)
+        
+        drift = fit_mle_drift(multiple_degradationdata, multiple_a, multiple_M, multiple_Σ_minus1)
+        dispersion = fit_mle_dispersion(multiple_degradationdata, multiple_a, multiple_M, multiple_Σ_minus1, drift)
+        
+        return N * log(dispersion) + sum(log.(det.(multiple_Σ)))
+    end
+    
+    return optimize(f, initial_ρ)
+end
+
+function fit_mle(wienerARD1::WienerARD1, multiple_degradationdata::Vector{DegradationData})
+    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD1.maintenances.TYPE]
+    used_wienerARD1 = WienerARD1(wienerARD1.maintenances[used_maintenance_indices, "TYPE"], 0., 0.)
+    
+    ρ = fit_mle_maintenance_effect(used_wienerARD1, multiple_degradationdata).minimizer
+    
+    multiple_a, multiple_M, multiple_V, multiple_C = coefficient(ρ, multiple_degradationdata, used_wienerARD1)[1:4]
+    multiple_Σ = Tridiagonal.(.-multiple_C, multiple_V, .-multiple_C)
+    multiple_Σ_minus1 = inv.(multiple_Σ)
+    
+    drift = fit_mle_drift(multiple_degradationdata, multiple_a, multiple_M, multiple_Σ_minus1)
+    dispersion = sqrt(fit_mle_dispersion(multiple_degradationdata, multiple_a, multiple_M, multiple_Σ_minus1, drift))
+    
+    new_wienerARD1 = WienerARD1(wienerARD1.maintenances.TYPE, drift, dispersion)
+    new_wienerARD1.maintenances.VALUE[used_maintenance_indices] = ρ
+    new_wienerARD1.maintenances.VALUE[Not(used_maintenance_indices)] .= 0.
+    
+    return new_wienerARD1
+end
+
+function fit_mle!(wienerARD1::WienerARD1, multiple_degradationdata::Vector{DegradationData})
+    wienerARD1 = fit_mle(wienerARD1, multiple_degradationdata)
     
     return wienerARD1
 end

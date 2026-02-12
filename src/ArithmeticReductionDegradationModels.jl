@@ -13,7 +13,7 @@ include("DataSet.jl")
 include("Models.jl")
 include("Simulation.jl")
 include("Plot.jl")
-include("MLE.jl")
+include("mle_ardinfinity.jl")
 include("mle_ard1.jl")
 
 end

@@ -6,8 +6,35 @@ import Random.rand!, Base.rand
 
     Re-Simulate the values of the degradation according to `model` and modify consequently the degradations `VALUE` of the data set `data`.
     Optional parameter `from` indicates that the simulation of degradation `VALUE` is only done after the row indice `from` of `data`.
+
 """
-function rand!(model::WienerARD, data::DegradationData, from::Int64=0)
+function rand!(model::WienerARD, data::DegradationData, from::Int64=0, drift::Function=identity, volatility::Function=identity)
+    try
+        # Attempt to call `drift` with Float64 input
+        result = drift(1.)
+
+        # Check if the output is Float64
+        if !(result isa Float64)
+            throw(ArgumentError("Drift function must return Float64, got $(typeof(result))"))
+        end
+    catch e
+        # If calling `drift` failed, clarify the error
+        throw(ArgumentError("Drift function must accept Float64 input"))
+    end
+
+    try
+        # Attempt to call `volatility` with Float64 input
+        result = volatility(1.)
+
+        # Check if the output is Float64
+        if !(result isa Float64)
+            throw(ArgumentError("Volatility function must return Float64, got $(typeof(result))"))
+        end
+    catch e
+        # If calling `volatility` failed, clarify the error
+        throw(ArgumentError("Volatility function must accept Float64 input"))
+    end
+
     ARDinf = (typeof(model) == WienerARD∞) #ARDinf or ARD1 ?
     modelParams = collect(params(model)[1,:])
     ρ = modelParams[3] #initialisation
@@ -36,10 +63,11 @@ function rand!(model::WienerARD, data::DegradationData, from::Int64=0)
             ip = 0
         end
         if (length(t) > 1)
-            dt = t[2:end] - t[1:(end-1)]
-            rd = rand(Normal(), length(dt))
+            dtdrift = [drift(x) for x in t[2:end]] - [drift(x) for x in t[1:(end-1)]]
+            dtvolatility = [volatility(x) for x in t[2:end]] - [volatility(x) for x in t[1:(end-1)]]
+            rd = rand(Normal(), length(dtdrift))
             #res[i] = rd
-            degval = deg0 .+ cumsum(rd .* modelParams[2] .* sqrt.(dt) .+ modelParams[1] .* dt)
+                degval = deg0 .+ cumsum(rd .* modelParams[2] .* sqrt.(dtvolatility) .+ modelParams[1] .* dtdrift)
             deg.VALUE[i_maint] = degval[1:(end-ip)]
             if ARDinf
                 deg0 = (1 - ρ) * degval[end]

@@ -29,6 +29,20 @@ function which_maint_type(type::String, maintTypes::Vector{String})
     return 1
 end
 
+function which_maint_type(type::String, maintTypes::Vector{Symbol})
+    if isempty(maintTypes)
+        return 1
+    else
+        for (i,mtype) in enumerate(maintTypes)
+            if mtype == type
+                return i
+            end
+        end
+    end
+    @warn string("The maintenance type ", type, " apear in the data and has not been defined, consequantly it is assimilated to type ", maintTypes[1])
+    return 1
+end
+
 """
     CreateData(maintenancesDates::Vector{Float64}, Δt::Float64, t_max::Float64=maintenancesDates[end], maintenancesTypes::Vector{Float64}=fill("",length(maintenancesDates)))
 

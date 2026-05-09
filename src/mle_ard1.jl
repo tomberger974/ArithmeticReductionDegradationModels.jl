@@ -1,3 +1,5 @@
+import Distributions.fit_mle
+
 #####MONO-SYSTEM ESTIMATORS#####
 function coefficient(ρ::Vector{Float64}, degradationdata::DegradationData, used_wienerARD1::WienerARD1)
     deg = vcat(DataFrame(DATE = 0., NB_MAINTENANCES = 0, VALUE = 0., TYPE = "Between"), degradationdata.degradations)

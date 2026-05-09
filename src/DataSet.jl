@@ -40,6 +40,7 @@ mutable struct DegradationData
         res = verifDegradationData(maintenances, degradations)
         new(convert(Dict{String, Any}, infos), res[1], res[2])
     end
+
 end
 
 #Verify that Dataframes maintenances and degradations respect the imposed format and are coherent
@@ -136,20 +137,7 @@ function DegradationData(maintenanceDates::Vector{Float64}, Δt::Float64, t_max:
             degTypes = vcat(degTypes, "After")
         end
 
-
-        #original code
-        #t = max(t_from, τ + Δt)
-
-        #my code
-        if jj == 0
-            t = max(t_from, τ + Δt)
-        else
-            t = t_from
-            while t <= τ
-                t += Δt
-            end
-        end
-
+        t = max(t_from, τ + Δt)
 
         τ_suiv = j <= length(maintenanceDates) ? maintenanceDates[j] : t_max
         while t < min(τ_suiv, t_max)
@@ -259,3 +247,4 @@ function infos!(data::DegradationData, infos::Dict{String, T} where T<: Any=Dict
     data.infos = infos
     return data
 end
+

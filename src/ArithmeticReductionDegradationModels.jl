@@ -2,7 +2,7 @@ module ArithmeticReductionDegradationModels
 
 using DataFrames, Distributions, Random, CairoMakie, Optim, StatsBase, LinearAlgebra
 
-export WienerARD∞, WienerARD1, params, params!, mean, var, std, quantile
+export WienerARD, WienerARD∞, WienerARD1, params, params!, mean, var, std, quantile
 export DegradationData, maintenances, degradations, maintenances!, degradations!, degradationsANDmaintenances!, infos, infos!
 export rand, rand!
 export MaintenancesPlot, DegradationsPlot, QuantilesPlot, plot!
@@ -15,5 +15,10 @@ include("Simulation.jl")
 include("Plot.jl")
 include("mle_ardinfinity.jl")
 include("mle_ard1.jl")
+include("multidim_models.jl")
+
+include("nl_simulation.jl")
+include("nl_mle.jl")
+
 
 end

@@ -1,5 +1,7 @@
 using ArithmeticReductionDegradationModels
 
+ArithmeticReductionDegradationModels.toto(1.)
+
 #ARD1 parameters
 μ = 2.
 σ = sqrt(5)

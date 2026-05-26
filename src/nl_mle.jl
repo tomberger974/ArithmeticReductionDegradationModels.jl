@@ -890,7 +890,7 @@ function fit_mle_maintenance_effect_α_β(used_wienerARD∞::WienerARD∞, multi
 end
 
 function fit_mle_α_β(wienerARD∞::WienerARD∞, multiple_degradationdata::Vector{DegradationData})
-    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD1.maintenances.TYPE]
+    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD∞.maintenances.TYPE]
     used_wienerARD∞ = WienerARD∞(wienerARD∞.maintenances[used_maintenance_indices, "TYPE"], 0., 0.)
     
     ρ_α_β = fit_mle_maintenance_effect_α_β(used_wienerARD∞, multiple_degradationdata).minimizer
@@ -936,7 +936,7 @@ function fit_mle_maintenance_effect_α(used_wienerARD∞::WienerARD∞, multiple
 end
 
 function fit_mle_α(wienerARD∞::WienerARD∞, multiple_degradationdata::Vector{DegradationData})
-    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD1.maintenances.TYPE]
+    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD∞.maintenances.TYPE]
     used_wienerARD∞ = WienerARD∞(wienerARD∞.maintenances[used_maintenance_indices, "TYPE"], 0., 0.)
     
     ρ_α = fit_mle_maintenance_effect_α(used_wienerARD∞, multiple_degradationdata).minimizer
@@ -981,7 +981,7 @@ function fit_mle_maintenance_effect_β(used_wienerARD∞::WienerARD∞, multiple
 end
 
 function fit_mle_β(wienerARD∞::WienerARD∞, multiple_degradationdata::Vector{DegradationData})
-    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD1.maintenances.TYPE]
+    used_maintenance_indices = [type in reduce(vcat, [degradationdata.maintenances.TYPE for degradationdata in multiple_degradationdata]) for type in wienerARD∞.maintenances.TYPE]
     used_wienerARD∞ = WienerARD∞(wienerARD∞.maintenances[used_maintenance_indices, "TYPE"], 0., 0.)
     
     ρ_β = fit_mle_maintenance_effect_β(used_wienerARD∞, multiple_degradationdata).minimizer

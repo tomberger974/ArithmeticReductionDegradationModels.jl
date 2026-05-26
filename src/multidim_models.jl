@@ -1,104 +1,97 @@
-mutable struct MWARD1
+abstract type MWARD end
+
+mutable struct MWARD∞ <: MWARD
     drift::Vector{Float64}
     volatility::Matrix{Float64}
-    efficiencies::Dict{Symbol, Float64}
+    efficiencies::Dict{Union{String, Symbol}, Vector{Float64}}
 end
 
-MWARD1(; drift::Vector{Float64}=[1.], volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Dict{Symbol, Float64}=Dict(:M => 0.)) = MWARD1(drift, volatility, efficiencies)
-MWARD1(dim::Int64; efficiencies::Dict{Symbol, Float64}=Dict(:M => 0.)) = MWARD1(ones(dim), diagm(ones(dim)), efficiencies)
+MWARD∞(; drift::Vector{Float64}=[0.], volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Dict{Symbol, Float64}=Dict(:M => 0.)) = MWARD∞(drift, volatility, [efficiencies])
+MWARD∞(dim::Int64;) = MWARD∞(zeros(dim), diagm(ones(dim)), [Dict(:M => 0.) for _ in 1:dim])
 
-Base.show(io::IO, mward1::MWARD1) = print(io, "drift:", mward1.drift, ", volatility:", mward1.volatility, ", efficiencies:", mward1.efficiencies)
+mutable struct MWARD1 <: MWARD
+    drift::Vector{Float64}
+    volatility::Matrix{Float64}
+    efficiencies::Dict{Union{String, Symbol}, Vector{Float64}}
+end
+
+MWARD1(; drift::Vector{Float64}=[0.], volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Dict{Symbol, Float64}=Dict(:M => 0.)) = MWARD1(drift, volatility, [efficiencies])
+MWARD1(dim::Int64;) = MWARD1(zeros(dim), diagm(ones(dim)), [Dict(:M => 0.) for _ in 1:dim])
+
+Base.show(io::IO, mward::MWARD) = print(io, "drift:", mward.drift, ", volatility:", mward.volatility, ", efficiencies:", mward.efficiencies)
 
 
 """
-    Re-Simulate the values of the degradation according to `model` and modify consequently the degradations `VALUE` of the data set `data`.
-    Optional parameter `from` indicates that the simulation of degradation `VALUE` is only done after the row indice `from` of `data`.
+    Simulate a wiener process with drift according to the parameters of `mward` at the time points given in `time`.
+    The simulation is done by simulating the increments of the process according to the distribution of the increments of a Wiener process with drift and then by taking the cumulative sum of these increments.
+    Works only if the different dimensions are observed at the same time points.
 """
-function rand!(model::MWARD1, data::DegradationData, from::Int64=0)
-#    ARDinf = (typeof(model) == WienerARD∞) #ARDinf or ARD1 ?
-    modelParams = [model.drift, model.efficiencies]
-    ρ = collect(values(model.efficiencies)) #initialisation
-    deg = data.degradations
-    maint = data.maintenances
-    maintTypes = collect(keys(model.efficiencies))
-    if from == 0
-        t0 = 0.
-        deg0 = 0.
-        i0 = 0
-    else
-        t0 = deg.DATE[min(from, nrow(data.degradations))]
-        deg0 = deg.VALUE[min(from, nrow(data.degradations))]
-        i0 = deg.NB_MAINTENANCES[min(from, nrow(data.degradations))]
-    end
-    for i in i0:nrow(maint)
-        t_maint = max( (vcat(0., maint.DATE))[i+1] , t0 )
-        i_maint = findall(deg.NB_MAINTENANCES .== i)
-        i_maint = i_maint[i_maint .> from]
-        if i< length(maint.DATE)
-            t = vcat(t_maint, deg.DATE[i_maint],maint.DATE[i+1])
-            ip = 1
-            ρu = ρ[which_maint_type(maint.TYPE[i+1], maintTypes)]
-        else
-            t = vcat(t_maint, deg.DATE[i_maint])
-            ip = 0
-        end
-        if (length(t) > 1)
-            dt = t[2:end] - t[1:(end-1)]
-            rd = rand(MvNormal(zeros(dt)), length(dt))
-            #res[i] = rd
-            degval = deg0 .+ cumsum(rd .* modelParams[2] .* sqrt.(dt) .+ modelParams[1] .* dt)
-            deg.VALUE[i_maint] = degval[1:(end-ip)]
-            if ARDinf
-                deg0 = (1 - ρu) * degval[end]
-            else
-                #ARD1
-                deg0 = degval[end] - ρu * (degval[end] - deg0)
-            end
-        end
-    end
+function mw_rand(mward::MWARD, inspection_dates::Vector{Float64})
 
-    data.infos["μ"] = modelParams[1]
-    data.infos["σ"] = modelParams[2]
-    data.infos["ρ"] = ρ
-    data.infos["ρTypes"] = maintTypes
-    if ARDinf
-        data.infos["simulationModel"] = "ARDinf-Wiener"
-    else
-        data.infos["simulationModel"] = "ARD1-Wiener"
-    end
+    # parameters
+    μ, σ = mward.drift, mward.volatility
 
-    return data
+    #time increments
+    Δt = diff(inspection_dates)
+
+    #simulation of the increments of the process according to the distribution of the increments of a Wiener process with drift
+    X = [Δtij > 0 ? rand(MvNormal(Δtij * μ, sqrt(Δtij) * σ)) : zeros(length(μ)) for Δtij in Δt]
+
+    #to have a matrix with each column corresponding to a time step
+    reducedX = reduce(hcat, vcat([zeros(length(μ))], X))
+
+    return  cumsum(reducedX, dims=2)
 end
 
-function rand!(model::MWARD1, data::DegradationData)
-    μ = model.drift
-    Σ = model.volatility
-    ρ = model.efficiencies
-    deg = data.degradations
-    maint = data.maintenances
+"""
+    Simulate a wiener process with drift according to the parameters of `mward` at the time points given in `inspection_dates` and with adjustments for maintenance effects according to the parameters of `mward` and the dates and types of maintenances given in `maintenances`.
+    The simulation is done by simulating firstly an unmaintained process with `mw_rand` and then by adjusting the values of the process after each maintenance according to the type of maintenance and the corresponding efficiency given in `mward`.
+"""
+function rand(mward::MWARD, inspection_dates::Vector{Float64}, maintenances::DataFrame)
 
-    sort(vcat([0.], deg.DATE, maint.DATE))
-    Δt = diff(sort(vcat([0.], deg.DATE, maint.DATE)))
-    ΔN = rand.(MvNormal.([μ * x for x in Δt], [Σ * x for x in Δt]))
-    W = reduce(hcat, vcat([[0., 0.]], cumsum(ΔN)))
+    # Create time vector with tags to track element types
+    n_deg = length(inspection_dates)
+    n_maint = nrow(maintenances)
+    time = vcat(0., inspection_dates, maintenances.DATE)
+    time_types = vcat(:maint, fill(:deg, n_deg), fill(:maint, n_maint))
 
-    for i in 0:nrow(maint)
-        if i == 0
-            τi =  0.
-            τiplus1 = maint[i+1]
-            ρu = ρ[maint.TYPE[i+1]]
-        elseif i == nrow(maint)
-            τi = maint[i]
-            τiplus1 = deg.DATE[end]
-            ρu = ρ[maint.TYPE[i+1]]
+    # Extract model parameters and data
+    ρ = mward.efficiencies
+    r = length(mward.drift)
+    deg = Matrix{Float64}(undef, r, n_deg)
+
+    # Sort time and track types
+    ordered_time_index = sortperm(time)
+    ordered_time = time[ordered_time_index]
+    ordered_time_types = time_types[ordered_time_index]
+
+    # Find positions of maintenance and degradation dates in sorted array
+    maint_index = findall(==(Symbol(:maint)), ordered_time_types)
+    deg_index = findall(==(Symbol(:deg)), ordered_time_types)
+
+    # Generate Wiener process values at all time points
+    Y = mw_rand(mward, ordered_time)
+
+    # Adjust for maintenance effects
+    for i in eachindex(maint_index[1:end-1])
+        if typeof(mward) == MWARD1
+            a = Y[:, maint_index[i + 1]] - Y[:, maint_index[i]]
         else
-            τi = maint[i]
-            τiplus1 = maint[i + 1]
-            ρu = 1.
+            a = Y[:, maint_index[i + 1]]
         end
-        i_maint = findall(deg.NB_MAINTENANCES .== i)
-        
+        ρi = ρ[maintenances[i, "TYPE"]]
+        Y[:, maint_index[i+1]:end] .-= ρi .* a
     end
 
-    return nothing
+    # Extract degradation values at inspection dates to delete information related to maintenances
+    deg = Y[:, deg_index]
+
+    return deg
 end
+
+#function rand!(mward::MWARD, degradationdata::DegradationData)
+    
+    #degradationdata.degradations.VALUE .= rand!(mward, degradationdata.degradations.DATE, degradationdata.maintenances)
+
+    #return degradationdata
+#end

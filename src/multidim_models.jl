@@ -89,9 +89,19 @@ function rand(mward::MWARD, inspection_dates::Vector{Float64}, maintenances::Dat
     return deg
 end
 
-#function rand!(mward::MWARD, degradationdata::DegradationData)
-    
-    #degradationdata.degradations.VALUE .= rand!(mward, degradationdata.degradations.DATE, degradationdata.maintenances)
+mutable struct MvDegradationData
+    maintenances::DataFrame
+    degradations::DataFrame    
+end
 
-    #return degradationdata
-#end
+function rand!(mward::MWARD, degradationdata::MvDegradationData)
+    
+    values = rand(mward, degradationdata.degradations.DATE, degradationdata.maintenances)
+
+    for i in 1:length(mward.drift)
+        println("VALUE$i")
+        degradationdata.degradations[!, "VALUE$i"] = values[i, :]
+    end
+
+    return degradationdata
+end

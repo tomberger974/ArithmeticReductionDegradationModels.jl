@@ -130,7 +130,7 @@ fig = Figure()
     lines!(inspection_dates[[1, nearest_time(τ[2], inspection_dates)]], [0. for _ in 1:2], linestyle=:dash, color=:grey, alpha=:.5)
 
     # Legend
-    axislegend(ax, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1 = 0.4", L"\rho_2 = .9", L"\rho_3 = 0.6"], position = :lt, labelsize=20.)
+    axislegend(ax, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1 = 0.4", L"\rho_2 = 0.9", L"\rho_3 = 0.6"], position = :lt, labelsize=20.)
 
     # Display and save the figure
     display(fig)

@@ -180,22 +180,7 @@ function delete_observations!(mvdegradationdata::MvDegradationData)
     return mvdegradationdata
 end
 
-function create_degradationdata(mvw::MvW; K = 3, N_i = 5, Δt = 1., τ = convert(Vector{Float64}, [j*Δt*N_i for j in 1:K]), τ_types = rand(keys(mvw.efficiencies), K),     T = convert(Float64, τ[end] + Δt*N_i))
-    # Degradations with a single column VALUE and a column INDICATOR to precise what indicator does the value refers to
-    degradations = DataFrame(DATE = vcat(1:Δt:T, 1:Δt:T), VALUE = Vector{Float64}(undef, 2 * Int64(T/Δt)), TYPE = vcat([:ind1 for _ in 1:Int64(T/Δt)], [:ind2 for _ in 1:Int64(T/Δt)]))
-    # Maintenances instance
-    maintenances = DataFrame(DATE = τ, TYPE = τ_types)
-    # Degradation instance
-    mvdegradationdata = MvDegradationData(maintenances, degradations)
-    # Deletion of a certain number of observations for a realistic case study
-    filter!(row -> row.DATE ∉ mvdegradationdata.maintenances.DATE, mvdegradationdata.degradations)
-    # Simulation of an ARD process
-    rand!(mvw, mvdegradationdata)
-    # Deletion of some observations
-    delete_observations!(mvdegradationdata)
 
-    return DegradationData
-end
 
 function compute_N_inspec(mvdegradationdata::MvDegradationData)
     n = mvdegradationdata.degradations[end, "NB_MAINTENANCES"]
@@ -209,21 +194,21 @@ function compute_N_inspec(mvdegradationdata::MvDegradationData)
     return N_inspec
 end
 
-abstract type ARD end
-mutable struct ARDinf <: ARD end
-mutable struct ARD1 <: ARD end
+abstract type AR end
+mutable struct ARDinf <: AR end
+mutable struct ARD1 <: AR end
 
 mutable struct efficiency
-    models::Vector{ARD}
+    models::Vector{AR}
     values::Vector{Float64}
 end
 
-function efficiency(models::Vector{<:ARD}, values::Vector{Float64})
-    efficiency(Vector{ARD}(models), values)
+function efficiency(models::Vector{<:AR}, values::Vector{Float64})
+    efficiency(Vector{AR}(models), values)
 end
 
-efficiency(; models::Vector{<:ARD}=[ARDinf()], values::Vector{Float64}=[0.]) = efficiency(models, values)
-efficiency(dim::Int64; models::Vector{<:ARD}=fill(ARD1(), dim)) = efficiency(models, zeros(Float64, dim))
+efficiency(; models::Vector{<:AR}=[ARDinf()], values::Vector{Float64}=[0.]) = efficiency(models, values)
+efficiency(dim::Int64; models::Vector{<:AR}=fill(ARD1(), dim)) = efficiency(models, zeros(Float64, dim))
 
 mutable struct MvW
     drift::Vector{Float64}
@@ -232,7 +217,7 @@ mutable struct MvW
 end
 
 MvW(; drift::Vector{Float64}=zeros(Float64, 1), volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Dict{Symbol, efficiency}=Dict(:M => efficiency())) = MvW(drift, volatility, efficiencies)
-MvW(dim::Int64; models::Vector{<:ARD}=fill(ARD1(), dim)) = MvW(zeros(dim), diagm(ones(dim)), Dict(:M => efficiency(dim; models)))
+MvW(dim::Int64; models::Vector{<:AR}=fill(ARD1(), dim)) = MvW(zeros(dim), diagm(ones(dim)), Dict(:M => efficiency(dim; models)))
 
 function time_subdivision(mvdegradationdata::MvDegradationData)
     return sort(unique(vcat(mvdegradationdata.degradations.DATE, mvdegradationdata.maintenances.DATE)))

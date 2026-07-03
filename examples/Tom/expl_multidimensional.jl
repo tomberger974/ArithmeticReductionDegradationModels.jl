@@ -10,35 +10,11 @@ using DataFrames
 using Distributions
 using LinearAlgebra
 
-mward1 = ARD.MWARD1([1., 1.], diagm([1., 1.]), Dict("P" => [0.5, 0.2]))
-mward∞ = ARD.MWARD∞([1., 1.], diagm([1., 1.]), Dict("P" => [0.5, 0.2]))
-μ = mward1.drift
-Σ = mward1.volatility
-ρ = mward1.efficiencies
-
-#degradationdata parameters
-K = 3 #number of maintenances
-N_i = 5 #number of observations between each maintenance
-Δt = 1. #time increment between 2 observations
-τ = convert(Vector{Float64}, [j*Δt*N_i for j in 1:K]) #maintenance dates
-τ_types = ["P" for _ in 1:K] #maintenance types
-T = convert(Float64, τ[end] + Δt*N_i) #maximal time of observation
-
-
-#create the degradationdata instance
-degradations = DataFrame(DATE = 1:Δt:T, VALUE1 = Vector{Float64}(undef, Int64(T/Δt)), VALUE2 = Vector{Float64}(undef, Int64(T/Δt)), NB_MAINTENANCES = count_NB_MAINTENANCES(τ, Vector{Float64}(1:Δt:T)))
-maintenances = DataFrame(DATE = τ, TYPE = τ_types)
-degradationdata = ARD.MvDegradationData(maintenances, degradations)
-filter!(row -> row.DATE ∉ degradationdata.maintenances.DATE, degradationdata.degradations)
-ARD.rand!(mward1, degradationdata)
-
-
-"""   
+"""
     count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
     Return a vector of the same length as `inspection_dates` with the number of maintenances before each inspection date.
     This function is used to fill the column NB_MAINTENANCES of the DataFrame degradations of a DegradationData instance.
 """
-
 function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
     n = length(inspection_dates)
     NB_MAINTENANCES = zeros(Int, n)
@@ -50,3 +26,53 @@ function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_da
     return NB_MAINTENANCES
 end
 
+μ = [1., 1.]
+Σ = diagm(ones(2))
+ρ = Dict((:ind1, :M) => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()))
+mvw = ARD.MvWienerAR(μ, Σ, ρ)
+ARD.MvWienerAR()
+keys(ρ)
+Set(k[2] for k in keys(ρ))
+rand(union(Set(k[2] for k in keys(ρ)), Set([:P])))
+
+degradationdata = DegradationData(mvw)
+degradations = degradationdata.degradations
+maintenances = degradationdata.maintenances
+
+ARD.mw_rand(mvw, sort(unique(degradationdata.degradations.DATE)))
+ARD.rand!(mvw, degradationdata)
+
+function truc(mvdegradationdata::MvDegradationData)
+    deg = mvdegradationdata.degradations
+    indicators = unique(deg.TYPE)
+    n = nrow(filter(row -> row.TYPE ==:ind1, deg))
+
+    indicators = unique(deg.TYPE)
+
+    nb_inspections = rand(0:n)
+    if nb_inspections == [0.]
+        return mvdegradationdata
+    end
+
+    inspections = sample(1:n, nb_inspections; replace=(n == 1 ? true : false))
+
+    for inspection in inspections
+        for indicator in indicators
+            rows = findall(row -> row.TYPE == indicator, deg)
+            if isempty(rows)
+                continue
+            end
+
+            row = rows[inspection]
+            deg[row, :VALUE] = NaN
+        end
+    end
+
+    return mvdegradationdata
+end
+
+A = [1, 3, 2]
+sort(A)
+
+rand!(mvw, degradationdata)
+ARD.time_subdivision(mvdegradationdata)

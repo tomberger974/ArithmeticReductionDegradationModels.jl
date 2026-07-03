@@ -45,7 +45,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # Axis definition
     ax1 = Axis(fig[1, 1], ylabel = "Characteristic (1)", ylabelsize=lbsize2, xgridvisible=false)
-    ax2 = Axis(fig[2, 1], ylabel = "Characteristic (2)", ylabelsize=lbsize2, xgridvisible=false)
+    ax2 = Axis(fig[2, 1], ylabel = "Characteristic (2)", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
     linkxaxes!(ax1, ax2)
     linkyaxes!(ax1, ax2)
 
@@ -69,7 +69,7 @@ fig = Figure(resolution = (1920, 1080))
 fig = Figure(resolution = (1920, 1080))
 
     # Axis definition
-    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xgridvisible=false)
+    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
     char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
@@ -86,22 +86,6 @@ fig = Figure(resolution = (1920, 1080))
 save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_1fig.png", fig)
 
 
-# One figure with both characteristics
-fig = Figure(resolution = (1920, 1080))
-
-    # Axis definition
-    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xgridvisible=false)
-
-    # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax1, inspection_dates, Y[2, :], color=:red, linewidth=1.)
-
-    ylims!(ax1, -2.5, 40.)
-
-    # Display and save the figure
-    display(fig)
-save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_1fig.png", fig)
-
 
 μ_list = [[1., 2.], [2., 2.], [2., 2.], [2., 2.]]
 Σ_list = [[.4 .2; .2 .4], [.4 .37; .37 .4], [2. .2; .2 .3], [.4 0.; 0. .4]]
@@ -117,8 +101,8 @@ for i in eachindex(μ_list)
     drift_char1 = lines!(vect_ax[i], inspection_dates, mward.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
     drift_char2 = lines!(vect_ax[i], inspection_dates, mward.drift[2] .* inspection_dates, color=:red, alpha=0.5)
     ylims!(vect_ax[i], -2.5, 40.)
-    display(fig)
 end
+display(fig)
 
 save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_4mw.png", fig)
 
@@ -491,7 +475,7 @@ fig = Figure(resolution = (1920, 1080))
 fig = Figure(resolution = (1920, 1080))
 
     # Axis definition
-    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xgridvisible=false)
+    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
     char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
@@ -541,6 +525,67 @@ I
     # Display and save the figure
     display(fig)
     save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_virtual_observations.png", fig)
+
+
+
+
+# One figure with both characteristics
+fig = Figure(resolution = (1920, 1080))
+
+    # Axis definition
+    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
+
+    # Main Wiener process trajectory
+    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1., alpha=.6)
+    char1ARD = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
+    maint_type2 = vlines!(ax1, τ[2], linestyle=:dash, color=:purple, linewidth=2.)
+    vlines!(ax1, τ[3], linestyle=:dash, color=:magenta, linewidth=2.)
+    maint_type3 = vlines!(ax1, τ[4], linestyle=:dash, color=:brown, linewidth=2.)
+
+    ylims!(ax1, -2.5, 40.)
+
+    # Add observation points with red color and bigger markersize
+    all_observations_char1 = scatter!(ax1, inspection_dates[I], Y[1, I], color=:grey, markersize=20.)
+    observations_char1_ARD = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+
+    # Add text for number of observations
+    text!(ax1, (0. + τ[1]) / 2 - 1., 15., text=L"\mathcal{N}_1 = 2", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[1] + τ[2]) / 2 - .5, 15., text=L"\mathcal{N}_2 = 1", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[2] + τ[3]) / 2 - .5, 15., text=L"\mathcal{N}_3 = 0", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[3] + τ[4]) / 2 - .5, 15., text=L"\mathcal{N}_4 = 1", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[4] + T) / 2 - 1., 15., text=L"\mathcal{N}_5 = 3", color=:black, fontsize=lbsize)
+
+    #all virtual increments
+    ps=Point2f.([(t, 30.) for t in sort(vcat(0., inspection_dates[I], τ))])
+    text_virtual_var = [L"\Delta X_{1, 1}", L"\Delta X_{1, 2}", L"\Delta X_{1, 3}", L"\Delta X_{2, 1}", L"\Delta X_{2, 2}", L"\Delta X_{3, 1}", L"\Delta X_{4, 1}", L"\Delta X_{4, 2}", L"\Delta X_{5, 1}", L"\Delta X_{5, 2}", L"\Delta X_{5, 3}"]
+    for i in 1:length(ps)-1
+        arrows2d!(ax1, ps[i], ps[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+        text!(ax1, (ps[i][1] + ps[i+1][1]) / 2 - .5, 30., text=text_virtual_var[i], color=:black, fontsize=lbsize - 5)
+    end
+
+    # observed increments for the sole last observations of the first characteristic
+    ps1=Point2f.([(t, 0.) for t in vcat(0., inspection_dates[I_char1])])
+    text_obs_var = [L"Z_0^{(1)}", L"Z_1^{(1)}", L"Z_2^{(1)}", L"\Delta Y_{3, 2}"]
+    for i in 1:length(ps1)-1
+        arrows2d!(ax1, ps1[i], ps1[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+        text!(ax1, (ps1[i][1] + ps1[i+1][1]) / 2 - .5, 0., text=text_obs_var[i], color=:black, fontsize=lbsize - 5)
+    end
+I
+    # Display and save the figure
+    display(fig)
+    save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_observed_increments_matrix.png", fig)
+
+
 
 
 fig = Figure(resolution = (1920, 1080))
@@ -668,7 +713,7 @@ fig = Figure(resolution = (1920, 1080))
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
     axislegend(ax2, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(2)} =0.2", L"\rho_2^{(2)} =0.5", L"\rho_3^{(2)} = 0.9"], position = :lt, labelsize=lbsize2)
 
-    # virtual increments for the sole last observations of the second characteristic
+    # virtual increments for the sole last observations of the first characteristic
     ps1=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char1])])
     text_obs_var = [L"Z_0^{(1)}", L"Z_1^{(1)}", L"Z_2^{(1)}", L"\Delta Y_{3, 2}"]
     for i in 1:length(ps1)-1
@@ -693,3 +738,32 @@ fig = Figure(resolution = (1920, 1080))
     # Display and save the figure
     display(fig)
     save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_main_figure_observed_increments_illustration.png", fig)
+
+
+# One figure with both characteristics
+fig = Figure(resolution = (1920, 1080))
+
+    # Axis definition
+    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
+
+    # Main Wiener process trajectory
+    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, Y[2, :], color=:red, linewidth=1.)
+    # ARD Wiener process trajectory
+    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linestyle=:dash, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, Y∞[2, :], color=:red, linestyle=:dash, linewidth=1.)
+
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
+    maint_type2 = vlines!(ax1, τ[2], linestyle=:dash, color=:purple, linewidth=2.)
+    vlines!(ax1, τ[3], linestyle=:dash, color=:magenta, linewidth=2.)
+    maint_type3 = vlines!(ax1, τ[4], linestyle=:dash, color=:brown, linewidth=2.)
+
+    ylims!(ax1, -2.5, 40.)
+
+    vlines!(ax1, inspection_dates[I], color=:black, linewidth=1., linestyle=:dash)
+I
+    # Display and save the figure
+    display(fig)
+    save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_main_figure_laurent_version.png", fig)

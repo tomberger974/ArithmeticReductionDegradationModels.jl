@@ -66,8 +66,8 @@ function verifDegradationData(maintenances::DataFrame, degradations::DataFrame)
     if "TYPE" ∉ names(maintenances)
         maintenances[!, :TYPE] .= ""
     end
-    if typeof(maintenances.TYPE) != Vector{String}
-        error("maintenance types must be repesented with String")
+    if typeof(maintenances.TYPE) != Vector{String} && typeof(maintenances.TYPE) != Vector{Symbol}
+        error("maintenance types must be repesented with String or Symbol")
     end
 
     #if necessary sort Dataframes values according to time occurence and previous maintenance observations
@@ -248,3 +248,19 @@ function infos!(data::DegradationData, infos::Dict{String, T} where T<: Any=Dict
     return data
 end
 
+"""   
+    count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
+    
+    Return a vector of the same length as `inspection_dates` with the number of maintenances before each inspection date.
+    This function is used to fill the column NB_MAINTENANCES of the DataFrame degradations of a DegradationData instance.
+"""
+function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
+    n = length(inspection_dates)
+    NB_MAINTENANCES = zeros(Int, n)
+    
+    for i in 1:n
+        NB_MAINTENANCES[i] = sum(maintenance_dates .< inspection_dates[i])
+    end
+
+    return NB_MAINTENANCES
+end

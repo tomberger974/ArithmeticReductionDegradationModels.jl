@@ -114,7 +114,6 @@ function rand(mvw::MvW, inspection_dates::Vector{Float64}, maintenances::DataFra
 
     # Generate Wiener process values at all time points
     Y = mw_rand(mvw, ordered_time)
-    println(size(Y))
 
     # Adjust for maintenance effects
     for i in eachindex(maint_index[1:end-1])
@@ -135,6 +134,11 @@ function rand(mvw::MvW, inspection_dates::Vector{Float64}, maintenances::DataFra
 end
 
 function rand!(mvw::MvW, degradationdata::DegradationData)
+
+    inspection_dates = Vector{Float64}([])
+    for i in 1:nrow(degradationdata.maintenances)
+        push!(inspection_dates, unique(filter(row -> row.NB_MAINTENANCES == i, degradationdata.degradations).DATE))
+    end
     
     values = rand(mvw, sort(unique(degradationdata.degradations.DATE)), degradationdata.maintenances)
 
@@ -221,4 +225,28 @@ MvW(dim::Int64; models::Vector{<:AR}=fill(ARD1(), dim)) = MvW(zeros(dim), diagm(
 
 function time_subdivision(mvdegradationdata::MvDegradationData)
     return sort(unique(vcat(mvdegradationdata.degradations.DATE, mvdegradationdata.maintenances.DATE)))
+end
+
+function jump_matrix(mvdegradationdata::MvDegradationData)
+    Δt = time_subdivision(mvdegradationdata)
+    K = nrow(mvdegradationdata.maintenances)
+    
+    m = nrow(mvdegradationdata.degradations)
+
+    blocks = Matrix{Float64}[]
+
+    for i in 1:n
+        B = zeros(m_i, m_i)
+
+        # Fill B however you like
+        B[1,1] = i
+        # ...
+
+        push!(blocks, B)
+    end
+
+    BD = BlockDiagonal(blocks)
+
+    return jump_matrix
+
 end

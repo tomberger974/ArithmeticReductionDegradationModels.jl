@@ -18,6 +18,7 @@ include("mle_ard1.jl")
 
 #include("multidim_models.jl")
 include("multidim.jl")
+include("multidim_data_simu.jl")
 
 include("nl_simulation.jl")
 include("nl_mle.jl")

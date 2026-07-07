@@ -155,7 +155,7 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
         degradations = vcat(degradations, row_after, rows_between, row_before)
     end
     # Degradation instance
-    degradationdata = DegradationData(maintenances, degradations[3:end-2, :])
+    degradationdata = DegradationData(maintenances, degradations[r+1:end-r, :])
     # Deletion of a certain number of observations for a realistic case study
     # filter!(row -> row.DATE ∉ degradationdata.maintenances.DATE, degradationdata.degradations)
     # Deletion of some observations

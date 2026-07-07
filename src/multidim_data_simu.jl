@@ -100,7 +100,7 @@ function delete_observations!(degradationdata::DegradationData)
     inspections = sample(1:n, nb_inspections; replace=(n == 1 ? true : false))
 
     for inspection in deg[inspections, :DATE]
-        nb_indicators = rand(1:length(indicators))
+        nb_indicators = rand(1:length(indicators)-1)
         deleted_indicators = sample(indicators, nb_indicators; replace=(nb_indicators == 1 ? true : false))
 
         for indicator in deleted_indicators
@@ -116,19 +116,52 @@ function delete_observations!(degradationdata::DegradationData)
     return degradationdata
 end
 
-function create_degradationdata(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ = convert(Vector{Float64}, [j*Δt*N_i for j in 1:K]), τ_types = rand(unique(k[1] for k in keys(mvw.efficiencies)), K), T = convert(Float64, τ[end] + Δt*N_i))
-    # Degradations with a single column VALUE and a column INDICATOR to precise what indicator does the value refers to
-    degradations = DataFrame(DATE = vcat(1:Δt:T, 1:Δt:T), VALUE = Vector{Float64}(undef, 2 * Int64(T/Δt)), TYPE = vcat([:ind1 for _ in 1:Int64(T/Δt)], [:ind2 for _ in 1:Int64(T/Δt)]), NB_MAINTENANCES = Vector{Int64}(undef, 2 * Int64(T/Δt)))
+"""   
+    count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
+    
+    Return a vector of the same length as `inspection_dates` with the number of maintenances before each inspection date.
+    This function is used to fill the column NB_MAINTENANCES of the DataFrame degradations of a DegradationData instance.
+"""
+function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
+    n = length(inspection_dates)
+    NB_MAINTENANCES = zeros(Int, n)
+    
+    for i in 1:n
+        NB_MAINTENANCES[i] = sum(maintenance_dates .< inspection_dates[i])
+    end
+
+    return NB_MAINTENANCES
+end
+
+"""
+    DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1.)
+    
+    Return a DegradationData instance with simulated degradation data according to the multidimensional Wiener process with drift and ARD maintenance model `mvw`.
+    The simulation is done on a time grid of length `K` with `N_i` time steps between each maintenance, and a time increment of `Δt`.
+"""
+function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], deletion::Bool=false)
+    r = length(mvw.drift)
+    τ = convert(Vector{Float64}, [j*Δt*N_i for j in 1:K])
+    T = convert(Float64, τ[end] + Δt*N_i)
     # Maintenances instance
     maintenances = DataFrame(DATE = τ, TYPE = τ_types)
+    # Degradations with a single column VALUE and a column INDICATOR to precise what indicator does the value refers to
+    degradations = DataFrame(DATE = Vector{Float64}([]), VALUE = Vector{Float64}([]), TYPE = Vector{Symbol}([]), NB_MAINTENANCES = Vector{Int64}([]))
+    truc = vcat([0.], τ, T)
+    for i in eachindex(truc)[1:end-1]
+        row_after = DataFrame(DATE = [truc[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+        rows_between = DataFrame(DATE = vcat(fill(truc[i]+1:Δt:truc[i+1]-1, r)...), VALUE = Vector{Float64}(undef, (N_i - 1)*r), TYPE = vcat([[indicators[i] for _ in truc[i]+1:Δt:truc[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in (N_i - 1)*r])
+        row_before = DataFrame(DATE = [truc[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+        degradations = vcat(degradations, row_after, rows_between, row_before)
+    end
     # Degradation instance
-    mvdegradationdata = DegradationData(maintenances, degradations)
+    degradationdata = DegradationData(maintenances, degradations[3:end-2, :])
     # Deletion of a certain number of observations for a realistic case study
-    filter!(row -> row.DATE ∉ mvdegradationdata.maintenances.DATE, mvdegradationdata.degradations)
-    # Simulation of an ARD process
-    rand!(mvw, mvdegradationdata)
+    # filter!(row -> row.DATE ∉ degradationdata.maintenances.DATE, degradationdata.degradations)
     # Deletion of some observations
-    delete_observations!(mvdegradationdata)
+    if deletion
+        delete_observations!(degradationdata)
+    end
 
-    return DegradationData
+    return degradationdata
 end

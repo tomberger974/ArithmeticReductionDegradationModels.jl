@@ -22,28 +22,18 @@ mutable struct MvWienerAR <: PDAMI
     efficiencies::Efficiencies
 
     function MvWienerAR(drift::Vector{Float64}, volatility::Matrix{Float64}, efficiencies::Efficiencies)
-        function verif(drift::Vector{Float64}, volatility::Matrix{Float64}, efficiencies::Efficiencies)
-            s = length(drift)
-            if size(volatility, 1) != s || size(volatility, 2) != s
-                throw(ArgumentError("volatility must be square and match length(drift)=" * string(s)))
-            end
-
-            return true
+        s = length(drift)
+        if size(volatility, 1) != s || size(volatility, 2) != s
+            throw(ArgumentError("volatility must be square and match length(drift)=" * string(s)))
         end
-
-        verif(drift, volatility, efficiencies)
         new(drift, volatility, efficiencies)
     end
 end
 
 MvWienerAR(; drift::Vector{Float64}=zeros(Float64, 1), volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Efficiencies=Dict((:ind1, :M) => Efficiency(.5, ARDinf()))) = MvWienerAR(drift, volatility, efficiencies)
-# MvWienerAR(dim::Int64; efficiencies::Efficiencies) = MvWienerAR(zeros(dim), diagm(ones(dim)), efficiencies)
+MvWienerAR(dim::Int64; efficiencies::Efficiencies) = MvWienerAR(zeros(dim), diagm(ones(dim)), efficiencies)
 
 Base.show(io::IO, mvw::MvWienerAR) = print(io, "μ=", mvw.drift, ", Σ=", mvw.volatility, ", ρ=", mvw.efficiencies)
-
-function time_subdivision(degradationdata::DegradationData)
-    return sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
-end
 
 function count_inspections(degradationdata::DegradationData)
     K = degradationdata.degradations[end, "NB_MAINTENANCES"]
@@ -57,7 +47,12 @@ function count_inspections(degradationdata::DegradationData)
     return N_inspec
 end
 
-function time_subdivision(degradationdata::DegradationData)
+"""
+    unsorted_time_subdivision(degradationdaa::DegradationData)
+    Return two vectors: the first one merges all inspections and maintenances dates along with the 0 date
+    and the second one indicates for each date if it is a maintenance or an inspection date with the convention that date 0 correspond to a maintenance.
+"""
+function unsorted_time_subdivision(degradationdata::DegradationData)
     deg = degradationdata.degradations
     maint = degradationdata.maintenances
 
@@ -66,7 +61,9 @@ function time_subdivision(degradationdata::DegradationData)
         push!(inspection_dates, unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE))
     end
     
-    return sort(vcat([0.], inspections, maint.DATE))
+    time_types = vcat(:maint, fill(:deg, length(inspection_dates)), fill(:maint, nrow(degradationdata.maintenances)))
+
+    return vcat([0.], inspection_dates, maint.DATE), time_types
 end
 
 

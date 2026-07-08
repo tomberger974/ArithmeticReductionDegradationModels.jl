@@ -26,21 +26,16 @@ function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_da
     return NB_MAINTENANCES
 end
 
-μ = [1., 1., 1.]
-Σ = diagm(ones(3))
-ρ = Dict((:ind1, :M) => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()), (:ind1, :C) => ARD.Efficiency(.4, ARD.ARD1()), (:ind2, :C) => ARD.Efficiency(.6, ARD.ARDinf()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()), (:ind3, :C) => ARD.Efficiency(.4, ARD.ARD1()), (:ind3, :C) => ARD.Efficiency(.6, ARD.ARDinf()))
+μ = [1., 1.]
+Σ = diagm(ones(2))
+ρ = Dict((:ind1, :M) => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()), (:ind1, :C) => ARD.Efficiency(.4, ARD.ARD1()), (:ind2, :C) => ARD.Efficiency(.6, ARD.ARDinf()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()))
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
-degradationdata = ARD.DegradationData(mvw; deletion=false)
-degradations = degradationdata.degradations
-println(degradations)
-maintenances = degradationdata.maintenances
+degradationdata = ARD.DegradationData(mvw; deletion=false, before=true, after = true)
+deg = degradationdata.degradations
+maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
 
-
-DataFrame(TRUC = 1.)
-
-unique(filter(row -> row.NB_MAINTENANCES == 0, degradations).DATE)
-
-ARD.count_inspections(degradationdata)
+unique(deg, [:DATE, :NB_MAINTENANCES])
+ARD.unsorted_time_subdivision(degradationdata)

@@ -56,14 +56,22 @@ function unsorted_time_subdivision(degradationdata::DegradationData)
     deg = degradationdata.degradations
     maint = degradationdata.maintenances
 
-    inspection_dates = Vector{Float64}([])
-    for i in 1:nrow(maint)
-        push!(inspection_dates, unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE))
+    # vector with the time subdivision of interest
+    time = Vector{Float64}([])
+    # nb_maintenances[i] indicates how many maintenances occured at time[i]
+    nb_maintenances = Vector{Float64}([])
+    # inspec_or_maint[i] indicates if time[i] correspond to a maintenance date or to an inspection date
+    inspec_or_maint = Vector{Float64}([])
+    
+    for i in 0:nrow(maint)
+        truc = unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)
+        time = vcat(time, truc)
+        nb_maintenances = vcat(nb_maintenances, [i for _ in truc])
     end
     
-    time_types = vcat(:maint, fill(:deg, length(inspection_dates)), fill(:maint, nrow(degradationdata.maintenances)))
+    time_types = vcat(:maint, fill(:deg, length(time)), fill(:maint, nrow(degradationdata.maintenances)))
 
-    return vcat([0.], inspection_dates, maint.DATE), time_types
+    return vcat([0.], time, maint.DATE), time_types
 end
 
 
@@ -96,6 +104,7 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
         for i in 1:K
             ρuip = ρ[(indicator, maint[i, "TYPE"])]
+            degi = filter(row -> row.NB_MAINTENANCES == i, deg)
             Δt = unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)
             if ρuip.model isa ARD1
                 ARD1_jump = vcat([0. for _ in 1:2])
@@ -112,4 +121,9 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     return jump_matrix
 
+end
+
+function machin(degrdationdata::DegradationData)
+    deg = unique(deg, [:DATE, :NB_MAINTENANCES])
+    
 end

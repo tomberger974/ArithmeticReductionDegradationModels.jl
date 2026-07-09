@@ -32,10 +32,16 @@ end
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
-degradationdata = ARD.DegradationData(mvw; deletion=false, before=true, after = true)
+degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
 
 unique(deg, [:DATE, :NB_MAINTENANCES])
-ARD.unsorted_time_subdivision(degradationdata)
+println(diff(ARD.unsorted_time_subdivision(degradationdata)[1]))
+findall(x -> x == 1, [1, 2, 1, 3])
+
+
+maint_dates = vcat([0.], sort(degradationdata.maintenances.DATE), max(deg.DATE...))
+f(i::Int64) = diff(vcat(maint_dates[i+1], sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)), maint_dates[i+2]))
+Dict(i => f(i) for i in 0:nrow(maint))

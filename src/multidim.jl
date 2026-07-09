@@ -54,27 +54,28 @@ end
 """
 function unsorted_time_subdivision(degradationdata::DegradationData)
     deg = degradationdata.degradations
-    maint = degradationdata.maintenances
+    maint_dates = vcat([0.], sort(degradationdata.maintenances.DATE), max(deg.DATE...))
 
     # vector with the time subdivision of interest
     time = Vector{Float64}([])
     # nb_maintenances[i] indicates how many maintenances occured at time[i]
-    nb_maintenances = Vector{Float64}([])
+    nb_maintenances = Vector{Int64}([])
     # inspec_or_maint[i] indicates if time[i] correspond to a maintenance date or to an inspection date
-    inspec_or_maint = Vector{Float64}([])
+    inspec_or_maint = Vector{Symbol}([])
     
-    for i in 0:nrow(maint)
-        truc = unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)
-        time = vcat(time, truc)
-        nb_maintenances = vcat(nb_maintenances, [i for _ in truc])
+    for i in eachindex(maint_dates)[1:end-1]
+        ith_deg = sort(unique(filter(row -> row.NB_MAINTENANCES == i-1, deg).DATE))
+        time = vcat(time, maint_dates[i], ith_deg, maint_dates[i+1])
+        nb_maintenances = vcat(nb_maintenances, [i for _ in 1:length(ith_deg)+2])
+        inspec_or_maint = vcat(inspec_or_maint, :maint, fill(:deg, length(ith_deg)), :maint)
+        truc = Dict()
     end
-    
-    time_types = vcat(:maint, fill(:deg, length(time)), fill(:maint, nrow(degradationdata.maintenances)))
 
-    return vcat([0.], time, maint.DATE), time_types
+    return time, nb_maintenances, inspec_or_maint
 end
 
 
+I(n) = 
 function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Data parameters
@@ -82,32 +83,30 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     maint = degradationdata.maintenances
     K = nrow(degradationdata.maintenances)
 
-    # Create time vector with tags to track element types
-    time = vcat(0., sort(unique(deg.DATE)), maint.DATE)
-    time_types = vcat(:maint, fill(:deg, K), fill(:maint, nrow(degradationdata.maintenances)))
-
     # Extract model parameters and data
     ρ = mvw.efficiencies
     indicators = unique(k[1] for k in keys(ρ))
 
-    # Sort time and track types
-    ordered_time_index = sortperm(time)
-    ordered_time = time[ordered_time_index]
-    ordered_time_types = time_types[ordered_time_index]
+    time, nb_maintenances, inspec_or_maint = unsorted_time_subdivision(degradationdata::DegradationData)
 
-    # Find positions of maintenance and degradation dates in sorted array
-    maint_index = findall(==(Symbol(:maint)), ordered_time_types)
-    deg_index = findall(==(Symbol(:deg)), ordered_time_types)
+    f(i::Int64) = diff(vcat(maint_dates[i+1], sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)), maint_dates[i+2]))
+    machin = Dict(i => f(i) for i in 0:nrow(maint))
+    machin_length = Dict(i => length(machin(i)))
+    machin_total_length = sum(machin_length(i))
+
 
     for indicator in indicators
         B = I
 
-        for i in 1:K
+        for i in 0:K
             ρuip = ρ[(indicator, maint[i, "TYPE"])]
-            degi = filter(row -> row.NB_MAINTENANCES == i, deg)
-            Δt = unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)
+
             if ρuip.model isa ARD1
-                ARD1_jump = vcat([0. for _ in 1:2])
+                n = 5
+                Iₙ = Matrix(I, n, n)
+
+                r = [10, 20, 30, 40, 50]   # new row
+                k = 3       
                 B *= vcat
             end
         end

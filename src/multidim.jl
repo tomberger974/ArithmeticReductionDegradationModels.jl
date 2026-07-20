@@ -35,6 +35,11 @@ MvWienerAR(dim::Int64; efficiencies::Efficiencies) = MvWienerAR(zeros(dim), diag
 
 Base.show(io::IO, mvw::MvWienerAR) = print(io, "μ=", mvw.drift, ", Σ=", mvw.volatility, ", ρ=", mvw.efficiencies)
 
+"""
+    count_inspections(degradationdata::DegradationData)
+
+TBW
+"""
 function count_inspections(degradationdata::DegradationData)
     K = degradationdata.degradations[end, "NB_MAINTENANCES"]
 
@@ -45,6 +50,11 @@ function count_inspections(degradationdata::DegradationData)
     end
 
     return N_inspec
+end
+
+mutable struct TimeSubdivision
+    date::Float64
+    marque::Symbol
 end
 
 """
@@ -75,7 +85,6 @@ function unsorted_time_subdivision(degradationdata::DegradationData)
 end
 
 
-I(n) = 
 function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Data parameters
@@ -88,6 +97,7 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     indicators = unique(k[1] for k in keys(ρ))
 
     time, nb_maintenances, inspec_or_maint = unsorted_time_subdivision(degradationdata::DegradationData)
+    println("time :", time, "nb_maint", nb_maintenances, "type", inspec_or_maint)
 
     f(i::Int64) = diff(vcat(maint_dates[i+1], sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)), maint_dates[i+2]))
     machin = Dict(i => f(i) for i in 0:nrow(maint))
@@ -95,25 +105,16 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     machin_total_length = sum(machin_length(i))
 
 
-    for indicator in indicators
-        B = I
 
-        for i in 0:K
+    for indicator in indicators
+        averaginginsertions = Vector{AveragingInsertion{Float64}}(undef, K)
+        for i in 1:K
             ρuip = ρ[(indicator, maint[i, "TYPE"])]
 
             if ρuip.model isa ARD1
-                n = 5
-                Iₙ = Matrix(I, n, n)
-
-                r = [10, 20, 30, 40, 50]   # new row
-                k = 3       
-                B *= vcat
+                averaginginsertions[i] = AveragingInsertion{Float64}()
             end
         end
-        B[1,1] = i
-        # ...
-
-        push!(blocks, B)
     end
 
     BD = BlockDiagonal(blocks)
@@ -122,7 +123,75 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
 end
 
-function machin(degrdationdata::DegradationData)
-    deg = unique(deg, [:DATE, :NB_MAINTENANCES])
+
+
+
+
+# An insertion defined by:
+# - k          : position where the new row is inserted
+# - first:last : columns of the non-zero coefficients in α
+# - coefficient: common value of the non-zero coefficients
+struct AveragingInsertion{T}
+    k::Int
+    first::Int
+    last::Int
+    coefficient::T
+end
+
+
+"""
+    insert_row!(B, nrows, ins)
+
+Apply one row-insertion transformation to the current block B.
+
+The new row is:
+    coefficient * sum(B[first:last, :], dims=1)
+
+which corresponds to multiplying by the insertion row α.
+"""
+function insert_row!(B, nrows, ins::AveragingInsertion)
+
+    newrow = ins.coefficient .* vec(sum(
+        @view(B[ins.first:ins.last, :]),
+        dims=1
+    ))
+
+    copyto!(
+        @view(B[ins.k+1:nrows+1, :]),
+        @view(B[ins.k:nrows, :])
+    )
+
+    B[ins.k, :] .= newrow
+
+    return nrows + 1
+end
+
+
+"""
+    build_block(n, insertions)
+
+Construct the final block starting from an n×n identity matrix.
+
+`insertions` is a vector of AveragingInsertion objects.
+"""
+function build_block(n::Int, insertions)
+
+    # Final size is known beforehand
+    B = zeros(Float64, n + length(insertions), n)
+
+    # Initial identity
+    B[1:n, :] .= Matrix(I, n, n)
+
+    nrows = n
+
+    for ins in insertions
+        nrows = insert_row!(B, nrows, ins)
+    end
+
+    return B
+end
+
+
+function ARD_matrix(mvw::MvWienerAR, degradationdata::DegradationData)
     
 end

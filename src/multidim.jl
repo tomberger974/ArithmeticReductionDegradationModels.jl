@@ -52,36 +52,46 @@ function count_inspections(degradationdata::DegradationData)
     return N_inspec
 end
 
-mutable struct TimeSubdivision
-    date::Float64
-    marque::Symbol
-end
 
 """
-    unsorted_time_subdivision(degradationdaa::DegradationData)
-    Return two vectors: the first one merges all inspections and maintenances dates along with the 0 date
-    and the second one indicates for each date if it is a maintenance or an inspection date with the convention that date 0 correspond to a maintenance.
-"""
-function unsorted_time_subdivision(degradationdata::DegradationData)
-    deg = degradationdata.degradations
-    maint_dates = vcat([0.], sort(degradationdata.maintenances.DATE), max(deg.DATE...))
+    time_subdivision(deg::DataFrame, maint::DataFrame, i::Int64)
 
-    # vector with the time subdivision of interest
-    time = Vector{Float64}([])
-    # nb_maintenances[i] indicates how many maintenances occured at time[i]
-    nb_maintenances = Vector{Int64}([])
-    # inspec_or_maint[i] indicates if time[i] correspond to a maintenance date or to an inspection date
-    inspec_or_maint = Vector{Symbol}([])
+    Returns a serie of time increments for a given Inter-Maintenance-Interval (IMI), 
+    going from the date of the maintenance action occuring at the start of the IMI 
+    to the date of the maintenance action occuring at the end of the IMI.
+    To be combined with time_subdivisions that gather each subdivision in a single dictionary.
+"""
+function time_subdivision(deg::DataFrame, maint::DataFrame, i::Int64)
     
-    for i in eachindex(maint_dates)[1:end-1]
-        ith_deg = sort(unique(filter(row -> row.NB_MAINTENANCES == i-1, deg).DATE))
-        time = vcat(time, maint_dates[i], ith_deg, maint_dates[i+1])
-        nb_maintenances = vcat(nb_maintenances, [i for _ in 1:length(ith_deg)+2])
-        inspec_or_maint = vcat(inspec_or_maint, :maint, fill(:deg, length(ith_deg)), :maint)
-        truc = Dict()
+    # find the inspection dates for which exactly i maintenance actions already occured
+    maintenanceless_dates = sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE))
+
+    # find the maintenance dates occuring just before and just after maintenanceless_dates
+    if i == 0
+        maint_imoins1 = 0.
+        maint_i = maint[i+1, "DATE"]
+    elseif i == nrow(maint)
+        maint_imoins1 = maint[i, "DATE"]
+        maint_i = max(deg.DATE...)
+    else
+        maint_imoins1 = maint[i, "DATE"]
+        maint_i = maint[i+1, "DATE"]
     end
 
-    return time, nb_maintenances, inspec_or_maint
+    return diff(vcat(maint_imoins1, maintenanceless_dates, maint_i))
+end
+
+
+"""
+    time_subdivisions(degradationdata::DegradationData)
+
+    Returns a dictionary of Int64 going from 0 to the number of maintenance actions in degradationdata.
+    Each entry i correspond to an Inter-Maintenance-Interval for which the dictionary returns 
+    a serie of time increments going from the date of the maintenance action occuring at the start of the IMI 
+    to the date of the maintenance action occuring at the end of the IMI.
+"""
+function time_subdivisions(deg::DataFrame, maint::DataFrame)
+    return Dict(i => time_subdivision(deg, maint, i) for i in 0:nrow(maint))
 end
 
 
@@ -90,37 +100,45 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     # Data parameters
     deg = degradationdata.degradations
     maint = degradationdata.maintenances
+
+    # Extract model efficiencies and indicators
+    ρ = mvw.efficiencies
+    indicators = unique(key[1] for key in keys(ρ))
+
+    # Respectively number of maintenance actions and indicators
     K = nrow(degradationdata.maintenances)
 
-    # Extract model parameters and data
-    ρ = mvw.efficiencies
-    indicators = unique(k[1] for k in keys(ρ))
+    # Provide a time subdivision for the matrices computation
+    subdivision = time_subdivisions(deg, maint)
+    subdivision_cumulative_length = cumsum([length(subdivision[i]) for i in 0:K])
+    subdivision_total_length = subdivision_cumulative_length[K]
 
-    time, nb_maintenances, inspec_or_maint = unsorted_time_subdivision(degradationdata::DegradationData)
-    println("time :", time, "nb_maint", nb_maintenances, "type", inspec_or_maint)
-
-    f(i::Int64) = diff(vcat(maint_dates[i+1], sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)), maint_dates[i+2]))
-    machin = Dict(i => f(i) for i in 0:nrow(maint))
-    machin_length = Dict(i => length(machin(i)))
-    machin_total_length = sum(machin_length(i))
+    # Vector containing the different blocks constituting the final matrix
+    blocks = Vector{Matrix{Float64}}(undef, length(indicators))
 
 
-
-    for indicator in indicators
+    for p in eachindex(indicators)
         averaginginsertions = Vector{AveragingInsertion{Float64}}(undef, K)
         for i in 1:K
-            ρuip = ρ[(indicator, maint[i, "TYPE"])]
+            ρuip = ρ[(indicators[p], maint[i, "TYPE"])]
 
             if ρuip.model isa ARD1
-                averaginginsertions[i] = AveragingInsertion{Float64}()
+                averaginginsertions[i] = AveragingInsertion{Float64}(
+                    subdivision_cumulative_length[i] + i,
+                    i != 1 ? subdivision_cumulative_length[i-1] + i - 1 : 1, subdivision_cumulative_length[i] + i - 1,
+                    ρuip.value)
+            elseif ρuip.model isa ARDinf
+                averaginginsertions[i] = AveragingInsertion{Float64}(
+                    subdivision_cumulative_length[i] + i,
+                    1, subdivision_cumulative_length[i] + i - 1,
+                    ρuip.value)
             end
         end
+
+        blocks[p] = build_block(subdivision_total_length + K, averaginginsertions)
     end
 
-    BD = BlockDiagonal(blocks)
-
-    return jump_matrix
-
+    return blocks
 end
 
 

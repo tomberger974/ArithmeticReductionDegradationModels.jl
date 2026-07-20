@@ -1,6 +1,6 @@
 module ArithmeticReductionDegradationModels
 
-using DataFrames, Distributions, Random, CairoMakie, Optim, StatsBase, LinearAlgebra
+using DataFrames, Distributions, Random, CairoMakie, Optim, StatsBase, LinearAlgebra, BlockDiagonals
 
 export WienerARD, WienerARD∞, WienerARD1, params, params!, mean, var, std, quantile
 export DegradationData, maintenances, degradations, maintenances!, degradations!, degradationsANDmaintenances!, infos, infos!

@@ -7,7 +7,6 @@ using ArithmeticReductionDegradationModels
 import ArithmeticReductionDegradationModels as ARD
 
 using DataFrames
-using Distributions
 using LinearAlgebra
 
 """
@@ -32,20 +31,19 @@ end
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
-degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 2, deletion=false, before=false, after = false)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
 
-unique(deg, [:DATE, :NB_MAINTENANCES])
-println(diff(ARD.unsorted_time_subdivision(degradationdata)[1]))
-findall(x -> x == 1, [1, 2, 1, 3])
+
+println(ARD.jump_matrix(degradationdata, mvw))
+ARD.jump_matrix(degradationdata, mvw)[1]
 
 
-maint_dates = vcat([0.], sort(degradationdata.maintenances.DATE), max(deg.DATE...))
-f(i::Int64) = diff(vcat(maint_dates[i+1], sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE)), maint_dates[i+2]))
-Dict(i => f(i) for i in 0:nrow(maint))
 
+
+#Test for the insertion functions inside of matrices
 x = 1/2
 
 ins1 = ARD.AveragingInsertion(
@@ -64,7 +62,14 @@ ins2 = ARD.AveragingInsertion(
 
 ARD.build_block(4, [ins1, ins2])
 
-ARD.jump_matrix(degradationdata, mvw)
 
-[x == 2 ? 3 : 0 for x in 1:10]
-[]
+
+### Test time_subdivision_tool ###
+# Usual case
+degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
+ARD.time_subdivision(degradationdata.degradations, degradationdata.maintenances, 0)
+ARD.time_subdivisions(degradationdata)
+# No observations before the first maintenance action
+degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
+filter!(row -> row.NB_MAINTENANCES != 0, degradationdata.degradations)
+ARD.time_subdivision(degradationdata.degradations, degradationdata.maintenances, 0)

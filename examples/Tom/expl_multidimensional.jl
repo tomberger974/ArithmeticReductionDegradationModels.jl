@@ -22,6 +22,7 @@ ARD.rand!(mvw, degradationdata)
 
 
 ARD.jump_matrix(degradationdata, mvw)[1]
+ARD.jump_matrix(degradationdata, mvw)[2]
 
 
 

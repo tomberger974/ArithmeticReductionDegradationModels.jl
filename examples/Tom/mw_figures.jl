@@ -18,6 +18,11 @@ include("nearest_time.jl")
 mward1 = ARD.MWARD1([2., 2.], [.4 .2; .2 .4], Dict("P" => [0.5, 0.2], "C" => [0.8, 0.5], "T" => [.9, .9]))
 mward∞ = ARD.MWARD∞([2., 2.], [.4 .2; .2 .4], Dict("P" => [0.5, 0.2], "C" => [0.8, 0.5], "T" => [.9, .9]))
 
+μ = [2., 2.]
+Σ = [.4 .2; .2 .4]
+ρ = Dict((:ind1, "P") => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, "P") => ARD.Efficiency(.2, ARD.ARDinf()), (:ind1, "C") => ARD.Efficiency(.8, ARD.ARD1()), (:ind2, "C") => ARD.Efficiency(.5, ARD.ARDinf()), (:ind1, "T") => ARD.Efficiency(.9, ARD.ARD1()), (:ind2, "T") => ARD.Efficiency(.9, ARD.ARDinf()))
+mvw = ARD.MvWienerAR(μ, Σ, ρ)
+
 # Define the inspection dates
 T = 15.
 inspection_dates = convert(Vector{Float64}, range(0, T, 500))
@@ -29,11 +34,11 @@ maintenances = DataFrame(DATE=τ, TYPE=["P", "C", "P", "T"])
 # Generation of the random processes trajectories
 nb_seed = 3
 Random.seed!(nb_seed)
-Y = ARD.mw_rand(mward1, inspection_dates)
+X = ARD.mw_rand(mvw, inspection_dates)
 Random.seed!(nb_seed)
-Y1 = rand(mward1, inspection_dates, maintenances)
-Random.seed!(nb_seed)
-Y∞ = rand(mward∞, inspection_dates, maintenances)
+Y = ARD.rand(mvw, inspection_dates, maintenances)
+Y1 = Y[1, :]
+Y∞ = Y[2, :]
 
 # Global variable for label size
 lbsize = 40.
@@ -50,12 +55,12 @@ fig = Figure(resolution = (1920, 1080))
     linkyaxes!(ax1, ax2)
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, X[2, :], color=:red, linewidth=1.)
 
     # Drift directing curve
-    drift_char1 = lines!(ax1, inspection_dates, mward1.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(ax2, inspection_dates, mward1.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(ax2, inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
 
     ylims!(ax1, -2.5, 37.)
 
@@ -72,12 +77,12 @@ fig = Figure(resolution = (1920, 1080))
     ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax1, inspection_dates, Y[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, X[2, :], color=:red, linewidth=1.)
 
     # Drift directing curve
-    drift_char1 = lines!(ax1, inspection_dates, mward1.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(ax1, inspection_dates, mward1.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(ax1, inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
 
     ylims!(ax1, -2.5, 40.)
 
@@ -93,13 +98,13 @@ save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_1fig.png
 fig = Figure(resolution = (1920, 1080))
 vect_ax = [Axis(fig[1, 1], xgridvisible=false, xlabel=L"(a)", xlabelsize=lbsize2), Axis(fig[1, 2], xgridvisible=false, xlabel=L"(b)", xlabelsize=lbsize2), Axis(fig[2, 1], xgridvisible=false, xlabel=L"(c)", xlabelsize=lbsize2), Axis(fig[2, 2], xgridvisible=false, xlabel=L"(d)", xlabelsize=lbsize2)]
 for i in eachindex(μ_list)
-    mward = ARD.MWARD1(μ_list[i], Σ_list[i], Dict("P" => [0.5, 0.2], "C" => [0.8, 0.5], "T" => [.9, .9]))
+    mvw = ARD.MvWienerAR(μ_list[i], Σ_list[i], ρ)
     Random.seed!(nb_seed)
-    Y = ARD.mw_rand(mward, inspection_dates)
-    char1 = lines!(vect_ax[i], inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(vect_ax[i], inspection_dates, Y[2, :], color=:red, linewidth=1.)
-    drift_char1 = lines!(vect_ax[i], inspection_dates, mward.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(vect_ax[i], inspection_dates, mward.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    X = ARD.mw_rand(mvw, inspection_dates)
+    char1 = lines!(vect_ax[i], inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(vect_ax[i], inspection_dates, X[2, :], color=:red, linewidth=1.)
+    drift_char1 = lines!(vect_ax[i], inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(vect_ax[i], inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
     ylims!(vect_ax[i], -2.5, 40.)
 end
 display(fig)
@@ -143,8 +148,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -161,10 +166,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -209,8 +214,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -227,10 +232,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -274,8 +279,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -292,29 +297,29 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
     axislegend(ax2, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(2)} =0.2", L"\rho_2^{(2)} =0.5", L"\rho_3^{(2)} = 0.9"], position = :lt, labelsize=lbsize2)
 
     # ARD1 arrows
-    arrows2d!(ax1, (inspection_dates[nearest_time(τ[4], inspection_dates)], Y1[1, nearest_time(τ[4], inspection_dates) - 1]), (0., Y1[1, nearest_time(τ[4], inspection_dates)] - Y1[1, nearest_time(τ[4], inspection_dates) - 1]), color = :blue, tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8)
-    text!(ax1, inspection_dates[nearest_time(τ[4], inspection_dates) - 70], (Y1[1, nearest_time(τ[4], inspection_dates) - 1] + Y1[1, nearest_time(τ[4], inspection_dates)]) / 2 - 1.5, text=L"\mathcal{Z}_4^{(1)} = - \rho_2 x", color=:blue, fontsize=lbsize)
-    arrows2d!(ax1, (inspection_dates[nearest_time(τ[3], inspection_dates)], Y1[1, nearest_time(τ[3], inspection_dates)]), (0., Y1[1, nearest_time(τ[4], inspection_dates) - 1] - Y1[1, nearest_time(τ[3], inspection_dates)]), color = :blue)
-    text!(ax1, inspection_dates[nearest_time(τ[3], inspection_dates) + 10], (Y1[1, nearest_time(τ[3], inspection_dates)] + Y1[1, nearest_time(τ[4], inspection_dates) - 1]) / 2, text=L"x", color=:blue, fontsize=lbsize)
-    hlines!(ax1, Y1[1, nearest_time(τ[4], inspection_dates) - 1], color=:blue, linestyle=:dash, linewidth=1.)
-    hlines!(ax1, Y1[1, nearest_time(τ[3], inspection_dates)], color=:blue, linestyle=:dash, linewidth=1.)
+    arrows2d!(ax1, (inspection_dates[nearest_time(τ[4], inspection_dates)], Y1[nearest_time(τ[4], inspection_dates) - 1]), (0., Y1[nearest_time(τ[4], inspection_dates)] - Y1[nearest_time(τ[4], inspection_dates) - 1]), color = :blue, tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8)
+    text!(ax1, inspection_dates[nearest_time(τ[4], inspection_dates) - 70], (Y1[nearest_time(τ[4], inspection_dates) - 1] + Y1[nearest_time(τ[4], inspection_dates)]) / 2 - 1.5, text=L"\mathcal{Z}_4^{(1)} = - \rho_2 x", color=:blue, fontsize=lbsize)
+    arrows2d!(ax1, (inspection_dates[nearest_time(τ[3], inspection_dates)], Y1[nearest_time(τ[3], inspection_dates)]), (0., Y1[nearest_time(τ[4], inspection_dates) - 1] - Y1[nearest_time(τ[3], inspection_dates)]), color = :blue)
+    text!(ax1, inspection_dates[nearest_time(τ[3], inspection_dates) + 10], (Y1[nearest_time(τ[3], inspection_dates)] + Y1[nearest_time(τ[4], inspection_dates) - 1]) / 2, text=L"x", color=:blue, fontsize=lbsize)
+    hlines!(ax1, Y1[nearest_time(τ[4], inspection_dates) - 1], color=:blue, linestyle=:dash, linewidth=1.)
+    hlines!(ax1, Y1[nearest_time(τ[3], inspection_dates)], color=:blue, linestyle=:dash, linewidth=1.)
 
     # ARD∞ arrows
-    arrows2d!(ax2, (inspection_dates[nearest_time(τ[4], inspection_dates)], Y∞[2, nearest_time(τ[4], inspection_dates) - 1]), (0., Y∞[2, nearest_time(τ[4], inspection_dates)] - Y∞[2, nearest_time(τ[4], inspection_dates) - 1]), color = :red, tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8)
-    text!(ax2, inspection_dates[nearest_time(τ[4], inspection_dates) - 70], (Y∞[2, nearest_time(τ[4], inspection_dates) - 1] + Y∞[2, nearest_time(τ[4], inspection_dates)]) / 2 - 1, text=L"\mathcal{Z}_4^{(2)} = - \rho_2 x", color=:red, fontsize=lbsize)
-    arrows2d!(ax2, (inspection_dates[nearest_time(τ[3], inspection_dates)], 0.), (0., Y∞[2, nearest_time(τ[4], inspection_dates) - 1]), color = :red)
-    text!(ax2, inspection_dates[nearest_time(τ[3], inspection_dates) + 10], (Y∞[2, nearest_time(τ[3], inspection_dates) - 1] + Y∞[2, nearest_time(τ[4], inspection_dates) - 1]) / 2, text=L"x", color=:red, fontsize=lbsize)
-    hlines!(ax2, Y∞[2, nearest_time(τ[4], inspection_dates) - 1], color=:red, linestyle=:dash, linewidth=1.)
+    arrows2d!(ax2, (inspection_dates[nearest_time(τ[4], inspection_dates)], Y∞[nearest_time(τ[4], inspection_dates) - 1]), (0., Y∞[nearest_time(τ[4], inspection_dates)] - Y∞[nearest_time(τ[4], inspection_dates) - 1]), color = :red, tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8)
+    text!(ax2, inspection_dates[nearest_time(τ[4], inspection_dates) - 70], (Y∞[nearest_time(τ[4], inspection_dates) - 1] + Y∞[nearest_time(τ[4], inspection_dates)]) / 2 - 1, text=L"\mathcal{Z}_4^{(2)} = - \rho_2 x", color=:red, fontsize=lbsize)
+    arrows2d!(ax2, (inspection_dates[nearest_time(τ[3], inspection_dates)], 0.), (0., Y∞[nearest_time(τ[4], inspection_dates) - 1]), color = :red)
+    text!(ax2, inspection_dates[nearest_time(τ[3], inspection_dates) + 10], (Y∞[nearest_time(τ[3], inspection_dates) - 1] + Y∞[nearest_time(τ[4], inspection_dates) - 1]) / 2, text=L"x", color=:red, fontsize=lbsize)
+    hlines!(ax2, Y∞[nearest_time(τ[4], inspection_dates) - 1], color=:red, linestyle=:dash, linewidth=1.)
     hlines!(ax2, 0., color=:red, linestyle=:dash, linewidth=1.)
 
     # Display and save the figure
@@ -356,8 +361,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -374,10 +379,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -429,8 +434,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -447,10 +452,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -478,8 +483,8 @@ fig = Figure(resolution = (1920, 1080))
     ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax1, inspection_dates, Y[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, X[2, :], color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -490,8 +495,8 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 40.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y[1, I_char1], color=:black, markersize=20.)
-    observations_char1 = scatter!(ax1, inspection_dates[I_char2], Y[2, I_char2], color=:black, markersize=20.)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], X[1, I_char1], color=:black, markersize=20.)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char2], X[2, I_char2], color=:black, markersize=20.)
     vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Add text for number of observations
@@ -536,8 +541,8 @@ fig = Figure(resolution = (1920, 1080))
     ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1., alpha=.6)
-    char1ARD = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1., alpha=.6)
+    char1ARD = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -548,8 +553,8 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 40.)
 
     # Add observation points with red color and bigger markersize
-    all_observations_char1 = scatter!(ax1, inspection_dates[I], Y[1, I], color=:grey, markersize=20.)
-    observations_char1_ARD = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
+    all_observations_char1 = scatter!(ax1, inspection_dates[I], X[1, I], color=:grey, markersize=20.)
+    observations_char1_ARD = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
     vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Add text for number of observations
@@ -616,8 +621,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -634,10 +639,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -686,8 +691,8 @@ fig = Figure(resolution = (1920, 1080))
     rowsize!(fig.layout, 2, Relative(0.08))
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax2, inspection_dates, Y∞[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
 
     # Maintenance dates illustration with dashed colored vertical lines
     maint_type1 = vlines!(ax1, τ[1], linestyle=:dash, color=:magenta, linewidth=2.)
@@ -704,10 +709,10 @@ fig = Figure(resolution = (1920, 1080))
     ylims!(ax1, -2.5, 35.)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[1, I_char1], color=:black, markersize=20.)
-    vlines!(ax1, inspection_dates[I_char1], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
-    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[2, I_char2], color=:black, markersize=20.)
-    vlines!(ax2, inspection_dates[I_char2], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Legend
     axislegend(ax1, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(1)} = 0.5", L"\rho_2^{(1)} = 0.8", L"\rho_3^{(1)} = 0.9"], position = :lt, labelsize=lbsize2)
@@ -747,11 +752,11 @@ fig = Figure(resolution = (1920, 1080))
     ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
 
     # Main Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y[1, :], color=:blue, linewidth=1.)
-    char2 = lines!(ax1, inspection_dates, Y[2, :], color=:red, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, X[2, :], color=:red, linewidth=1.)
     # ARD Wiener process trajectory
-    char1 = lines!(ax1, inspection_dates, Y1[1, :], color=:blue, linestyle=:dash, linewidth=1.)
-    char2 = lines!(ax1, inspection_dates, Y∞[2, :], color=:red, linestyle=:dash, linewidth=1.)
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linestyle=:dash, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, Y∞, color=:red, linestyle=:dash, linewidth=1.)
 
 
     # Maintenance dates illustration with dashed colored vertical lines

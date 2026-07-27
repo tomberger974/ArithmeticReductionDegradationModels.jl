@@ -11,11 +11,12 @@ using LinearAlgebra
 
 μ = [1., 1.]
 Σ = diagm(ones(2))
-ρ = Dict((:ind1, :M) => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()), (:ind1, :C) => ARD.Efficiency(.4, ARD.ARD1()), (:ind2, :C) => ARD.Efficiency(.6, ARD.ARDinf()), (:ind2, :M) => ARD.Efficiency(.5, ARD.ARDinf()))
+ρ = Dict((:ind1, :M) => ARD.Efficiency(.1, ARD.ARD1()), (:ind2, :M) => ARD.Efficiency(.1, ARD.ARDinf()), (:ind1, :C) => ARD.Efficiency(.1, ARD.ARD1()), (:ind2, :C) => ARD.Efficiency(.1, ARD.ARDinf()))
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 2, deletion=false, before=false, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 2, τ_types = [:M, :C ], deletion=false, before=false, after = false)
+#filter!(row -> row.NB_MAINTENANCES == 2, degradationdata.degradations)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)

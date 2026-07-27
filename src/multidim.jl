@@ -174,8 +174,9 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
             if ρuip.model isa ARD1
                 virtualjumps[i] = Insertion{Float64}(
                     subdivision_cumulative_length[i] + i,
-                    i != 1 ? subdivision_cumulative_length[i-1] + i - 1 : 1, subdivision_cumulative_length[i] + i - 1,
+                    i != 1 ? subdivision_cumulative_length[i-1] + i : 1, subdivision_cumulative_length[i] + i - 1,
                     ρuip.value)
+                    println(i != 1 ? subdivision_cumulative_length[i-1] + i - 1 : 1)
             elseif ρuip.model isa ARDinf
                 virtualjumps[i] = Insertion{Float64}(
                     subdivision_cumulative_length[i] + i,

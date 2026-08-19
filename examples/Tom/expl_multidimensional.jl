@@ -16,17 +16,20 @@ mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
 degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 2, τ_types = [:M, :C ], deletion=false, before=false, after = false)
-#filter!(row -> row.NB_MAINTENANCES == 2, degradationdata.degradations)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
+filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
 
+ARD.ARDmatrix(degradationdata, mvw)[:ind1]
+ARD.ARDmatrix(degradationdata, mvw)[:ind2]
+ARD.ARDmatrix(degradationdata, mvw)
 
-ARD.jump_matrix(degradationdata, mvw)[1]
-ARD.jump_matrix(degradationdata, mvw)[2]
+ARD.observation_matrix(degradationdata, mvw)
 
-
-
+ARD.combine_matrices(degradationdata, mvw)
+ARD.combine_matrices(degradationdata, mvw)[:ind1]
+ARD.combine_matrices(degradationdata, mvw)[:ind2]
 
 #Test for the insertion functions inside of matrices
 x = 1/2

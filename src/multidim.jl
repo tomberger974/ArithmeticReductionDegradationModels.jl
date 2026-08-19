@@ -106,23 +106,7 @@ to the date of the maintenance action occuring at the end of the IMI.
 To be combined with time_subdivisions that gather each subdivision in a single dictionary.
 """
 function time_subdivision(deg::DataFrame, maint::DataFrame, i::Int64)
-    
-    # find the inspection dates for which exactly i maintenance actions already occured
-    maintenanceless_dates = sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE))
-
-    # find the maintenance dates occuring just before and just after maintenanceless_dates
-    if i == 0
-        maint_imoins1 = 0.
-        maint_i = maint[i+1, "DATE"]
-    elseif i == nrow(maint)
-        maint_imoins1 = maint[i, "DATE"]
-        maint_i = max(deg.DATE...)
-    else
-        maint_imoins1 = maint[i, "DATE"]
-        maint_i = maint[i+1, "DATE"]
-    end
-
-    return diff(vcat(maint_imoins1, maintenanceless_dates, maint_i))
+    return sort(unique(filter(row -> row.NB_MAINTENANCES == i, deg).DATE))
 end
 
 
@@ -130,8 +114,8 @@ end
     time_subdivisions(degradationdata::DegradationData)
 
 Returns a dictionary of Int64 going from 0 to the number of maintenance actions in degradationdata.
-Each entry i correspond to an Inter-Maintenance-Interval for which the dictionary returns 
-a serie of time increments going from the date of the maintenance action occuring at the start of the IMI 
+Each entry i correspond to an Inter-Maintenance-Interval for which the dictionary returns a serie
+of latent time increments going from the date of the maintenance action occuring at the start of the IMI
 to the date of the maintenance action occuring at the end of the IMI.
 """
 function time_subdivisions(deg::DataFrame, maint::DataFrame)
@@ -140,12 +124,12 @@ end
 
 
 """
-    jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
+    ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
 Returns a Dict of matrices associating each indicator to a matrix reconstructing the different 
 virtual jumps.
 """
-function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
+function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Data parameters
     deg = degradationdata.degradations
@@ -160,11 +144,10 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Provide a time subdivision for the matrices computation
     subdivision = time_subdivisions(deg, maint)
-    subdivision_cumulative_length = cumsum([length(subdivision[i]) for i in 0:K])
+    subdivision_cumulative_length = cumsum([length(subdivision[i]) + 1 for i in 0:K])
 
     # Vector containing the different blocks constituting the final matrix
-    blocks = Vector{Matrix{Float64}}(undef, length(indicators))
-
+    blocks = Dict(ind => Matrix{Float64}(undef, subdivision_cumulative_length[end] + K, subdivision_cumulative_length[end]) for ind in indicators)
 
     for p in eachindex(indicators)
         virtualjumps = Vector{Insertion{Float64}}(undef, K)
@@ -185,7 +168,7 @@ function jump_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
             end
         end
 
-        blocks[p] = build_block(subdivision_cumulative_length[K] + K, virtualjumps)
+        blocks[indicators[p]] = build_block(subdivision_cumulative_length[K] + K, virtualjumps)
     end
 
     return blocks
@@ -254,4 +237,75 @@ function build_block(n::Int, insertions)
     end
 
     return B
+end
+
+
+function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
+
+    deg = degradationdata.degradations
+    maint = degradationdata.maintenances
+
+    # Extract model efficiencies and indicators
+    ρ = mvw.efficiencies
+    indicators = unique(key[1] for key in keys(ρ))
+
+    # Respectively number of maintenance actions and indicators
+    K = nrow(maint)
+
+    # Provide a time subdivision for the matrices computation
+    subdivision = time_subdivisions(deg, maint)
+
+    # Dict associating an indicator 
+    all_indices = Dict(ind => [] for ind in indicators)
+
+    for ind in indicators
+        subdivision_p = time_subdivisions(filter(row -> row.TYPE == ind, deg), maint)
+
+        count = 0
+
+        summation_indices = Vector{Int64}(undef, sum([length(subdivision_p[i]) for i in 0:K]))
+        index = 0
+
+        for i in 0:K
+            for truc in subdivision[i]
+                count += 1
+                if truc in subdivision_p[i]
+                    index += 1
+                    summation_indices[index] = count
+                end
+                count += 2
+            end
+        end
+        
+        all_indices[ind] = summation_indices
+    end
+
+    return all_indices
+
+end
+
+function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
+
+    deg = degradationdata.degradations
+    maint = degradationdata.maintenances
+
+    # Extract model efficiencies and indicators
+    ρ = mvw.efficiencies
+    indicators = unique(key[1] for key in keys(ρ))
+
+    A = observation_matrix(degradationdata, mvw)
+    B = ARDmatrix(degradationdata, mvw)
+    C = Dict(ind => Matrix{Float64}(undef, length(A[ind]), size(B[ind], 2)) for ind in indicators)
+
+
+    for ind in indicators
+        Ap = vcat(1, A[ind])
+        Bp = B[ind]
+
+        for i in 1:length(Ap)-1
+            C[ind][i, :] = sum([Bp[j, :] for j in Ap[i]:Ap[i+1]])
+        end
+    end
+
+    return C
 end

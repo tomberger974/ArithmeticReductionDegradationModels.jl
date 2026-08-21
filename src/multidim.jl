@@ -144,7 +144,8 @@ function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Provide a time subdivision for the matrices computation
     subdivision = time_subdivisions(deg, maint)
-    subdivision_cumulative_length = cumsum([length(subdivision[i]) + 1 for i in 0:K])
+    subdivision_cumulative_length = cumsum([length(subdivision[i]) + (i != K ? 1 : 0) for i in 0:K])
+
 
     # Vector containing the different blocks constituting the final matrix
     blocks = Dict(ind => Matrix{Float64}(undef, subdivision_cumulative_length[end] + K, subdivision_cumulative_length[end]) for ind in indicators)
@@ -159,7 +160,6 @@ function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
                     subdivision_cumulative_length[i] + i,
                     i != 1 ? subdivision_cumulative_length[i-1] + i : 1, subdivision_cumulative_length[i] + i - 1,
                     ρuip.value)
-                    println(i != 1 ? subdivision_cumulative_length[i-1] + i - 1 : 1)
             elseif ρuip.model isa ARDinf
                 virtualjumps[i] = Insertion{Float64}(
                     subdivision_cumulative_length[i] + i,
@@ -168,7 +168,7 @@ function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
             end
         end
 
-        blocks[indicators[p]] = build_block(subdivision_cumulative_length[K] + K, virtualjumps)
+        blocks[indicators[p]] = build_block(subdivision_cumulative_length[end], virtualjumps)
     end
 
     return blocks
@@ -239,7 +239,15 @@ function build_block(n::Int, insertions)
     return B
 end
 
+"""
+    observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
+Returns a dictionary linking each indicator to a serie of indices that allow to constitute the
+matrix A that constucts the observed VARIABLES out of the latent VARIABLES. For instance if it 
+returns [1, 5] for the indicator :ind, it means that we have a total of two observations for this
+indicator and that its first observed increment is equal to the first latent increment and that
+its second observed variable is equal to the sum of the 2nd, 3rd, 4th and 5th latent variables.
+"""
 function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     deg = degradationdata.degradations
@@ -284,6 +292,12 @@ function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
 end
 
+"""
+    combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
+
+Returns a dictionary linking each indicator to a matrix that construct the observed VARIABLES
+out of the latent INCREMENTS (pretty much AB).
+"""
 function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
 
     deg = degradationdata.degradations
@@ -299,13 +313,17 @@ function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
 
 
     for ind in indicators
-        Ap = vcat(1, A[ind])
+        Ap = A[ind]
         Bp = B[ind]
 
-        for i in 1:length(Ap)-1
-            C[ind][i, :] = sum([Bp[j, :] for j in Ap[i]:Ap[i+1]])
+        for i in eachindex(Ap)
+            C[ind][i, :] = sum([Bp[j, :] for j in (i!=1 ? (Ap[i-1]+1:Ap[i]) : 1:Ap[i])])
         end
     end
 
     return C
+end
+
+function correlation_matrix(mvw::MvWienerAR)
+
 end

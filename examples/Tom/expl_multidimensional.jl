@@ -26,15 +26,18 @@ ARD.ARDmatrix(degradationdata, mvw)[:ind2]
 ARD.ARDmatrix(degradationdata, mvw)
 
 ARD.observation_matrix(degradationdata, mvw)
+ARD.observation_matrix(degradationdata, mvw)[:ind1]
+ARD.observation_matrix(degradationdata, mvw)[:ind2]
 
 ARD.combine_matrices(degradationdata, mvw)
 ARD.combine_matrices(degradationdata, mvw)[:ind1]
 ARD.combine_matrices(degradationdata, mvw)[:ind2]
 
+
 #Test for the insertion functions inside of matrices
 x = 1/2
 
-ins1 = ARD.AveragingInsertion(
+ins1 = ARD.Insertion(
     3,      # insert after row 2
     1, 2,   # non-zero coefficients on columns 1:2
     x
@@ -42,7 +45,7 @@ ins1 = ARD.AveragingInsertion(
 
 y = 1/3
 
-ins2 = ARD.AveragingInsertion(
+ins2 = ARD.Insertion(
     5,      # insert after row 4 of the current block
     1, 3,   # non-zero coefficients on columns 1:3
     y

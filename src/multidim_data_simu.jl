@@ -152,7 +152,7 @@ May contain observations just before or just after the maintenance
 """
 function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], before::Bool=false, after::Bool=false, deletion::Bool=false)
     r = length(mvw.drift)
-    τ = convert(Vector{Float64}, [j*Δt*N_i for j in 1:K])
+    τ = convert(Vector{Float64}, [j*Δt*(N_i + 1) for j in 1:K])
     T = convert(Float64, τ[end] + Δt*N_i)
 
     # Maintenances with a column DATE and a column VALUE
@@ -161,28 +161,28 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
     degradations = DataFrame(DATE = Vector{Float64}([]), VALUE = Vector{Float64}([]), TYPE = Vector{Symbol}([]), NB_MAINTENANCES = Vector{Int64}([]))
     
     # Depending on the values of before and after create a degradations object with observations just before or just after maintenance actions
-    maint_dates = vcat([0.], τ, T)
+    maint_dates = vcat([0.], τ, T + Δt)
     if !after & !before
         for i in eachindex(maint_dates)[1:end-1]
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, (N_i - 1)*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in (N_i - 1)*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
             degradations = vcat(degradations, rows_between)
         end
     elseif !after & before
         for i in eachindex(maint_dates)[1:end-1]
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, (N_i - 1)*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in (N_i - 1)*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
             row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
             degradations = vcat(degradations, rows_between, row_before)
         end
     elseif after & !before
         for i in eachindex(maint_dates)[1:end-1]
             row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, (N_i - 1)*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in (N_i - 1)*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
             degradations = vcat(degradations, row_after, rows_between)
         end
     else
         for i in eachindex(maint_dates)[1:end-1]
             row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, (N_i - 1)*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in (N_i - 1)*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
             row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
             degradations = vcat(degradations, row_after, rows_between, row_before)
         end

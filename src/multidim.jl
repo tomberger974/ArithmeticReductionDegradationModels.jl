@@ -265,42 +265,43 @@ function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     # Respectively number of maintenance actions and indicators
     K = nrow(maint)
 
-    # Provide a time subdivision for the matrices computation
-    subdivision = time_subdivisions(deg, maint; inspec_maint = false)
+    # Provide a time subdivisions for the matrices computation
+    subdivisions = time_subdivisions(deg, maint; inspec_maint = false)
 
     # Dict associating an indicator 
     all_indices = Dict(ind => [] for ind in indicators)
 
     for ind in indicators
-        subdivision_p = time_subdivisions(filter(row -> row.TYPE == ind, deg), maint; inspec_maint = false)
+        subdivisions_p = time_subdivisions(filter(row -> row.TYPE == ind, deg), maint; inspec_maint = false)
 
         count = 0
 
-        summation_indices = Vector{Int64}(undef, sum([length(subdivision_p[i]) for i in 0:K]))
+        summation_indices = Vector{Int64}(undef, sum([length(subdivisions_p[i]) for i in 0:K]))
         index = 0
 
         for i in 0:K
 
-            n_i = length(subdivision[i])
-            
-            for j in eachindex(subdivision[i])
+            if isempty(subdivisions_p)
+                continue
+            elseif (i == 0 ? false : subdivisions[i][1] == maint[i,"DATE"])
+                nothing
+            else
+                count += 1
+            end
 
-                if j == 1 && subdivision[i][j] == (i == 0 ? 0. : maint[i,"DATE"])
-                    nothing
-                else
-                    count += 1
-                end
-
-                if subdivision[i][j] in subdivision_p[i]
+            for date in subdivisions[i]
+                if date in subdivisions_p[i]
                     index += 1
                     summation_indices[index] = count
                 end
 
-                if j == n_i && subdivision[i][j] == (i == K ? deg[end,"DATE"] + 1. : maint[i+1,"DATE"])
-                    count += 1
-                else
-                    count += 2
-                end
+                count += 1
+            end
+
+            if (i == K ? false : subdivisions[i][end] == maint[i+1,"DATE"])
+                nothing
+            else
+                count += 1
             end
         end
         

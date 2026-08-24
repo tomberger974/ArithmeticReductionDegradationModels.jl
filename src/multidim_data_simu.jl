@@ -170,7 +170,11 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
     elseif !after & before
         for i in eachindex(maint_dates)[1:end-1]
             rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
-            row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+            if i != eachindex(maint_dates)[end-1]
+                row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+            else
+                row_before = similar(rows_between, 0)
+            end
             degradations = vcat(degradations, rows_between, row_before)
         end
     elseif after & !before
@@ -183,7 +187,11 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
         for i in eachindex(maint_dates)[1:end-1]
             row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
             rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
-            row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+            if i != eachindex(maint_dates)[end-1]
+                row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+            else
+                row_before = similar(rows_between, 0)
+            end
             degradations = vcat(degradations, row_after, rows_between, row_before)
         end
     end

@@ -15,7 +15,7 @@ using LinearAlgebra
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 2, τ_types = [:M, :C ], deletion=false, before=true, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [:M, :C ], deletion=false, before=true, after = true)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
@@ -33,19 +33,19 @@ ARD.combine_matrices(degradationdata, mvw)
 ARD.combine_matrices(degradationdata, mvw)[:ind1]
 ARD.combine_matrices(degradationdata, mvw)[:ind2]
 
-
 ### Test for the insertion functions inside of matrices ###
 ins1 = ARD.Insertion(3, 1, 2, .5)
 ins2 = ARD.Insertion(5, 1, 3, .5)
 ARD.build_block(4, [ins1, ins2])
 
-
+eachindex([1, 2, 3, 4])[end]
 
 ### Test time_subdivision_tool ###
 # Usual case
 degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
 ARD.time_subdivision(degradationdata.degradations, degradationdata.maintenances, 0)
-ARD.time_subdivisions(degradationdata.degradations, degradationdata.maintenances)
+ARD.time_subdivisions(degradationdata.degradations, degradationdata.maintenances; inspec_maint = false)
+ARD.time_subdivisions(degradationdata.degradations, degradationdata.maintenances; inspec_maint = true)
 # No observations before the first maintenance action
 degradationdata = ARD.DegradationData(mvw; deletion=false, before=false, after = false)
 filter!(row -> row.NB_MAINTENANCES != 0, degradationdata.degradations)

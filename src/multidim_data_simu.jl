@@ -8,7 +8,9 @@ Works only if the different dimensions are observed at the same time points.
 function mw_rand(mvw::MvWienerAR, inspection_dates::Vector{Float64})
 
     # parameters
-    μ, Σ = mvw.drift, mvw.volatility
+    indicators = collect(keys(mvw.drift))
+    μ = [mvw.drift[indicator] for indicator in indicators]
+    Σ = [mvw.covariances[(ind1, ind2)] for ind1 in indicators, ind2 in indicators]
 
     #time increments
     Δt = diff(inspection_dates)
@@ -19,7 +21,7 @@ function mw_rand(mvw::MvWienerAR, inspection_dates::Vector{Float64})
     #to have a matrix with each column corresponding to a time step
     reducedX = reduce(hcat, vcat([zeros(length(μ))], X))
 
-    return cumsum(reducedX, dims=length(mvw.drift))
+    return cumsum(reducedX, dims=2)
 end
 
 """
@@ -41,7 +43,7 @@ function rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::
     ρ = mvw.efficiencies
     r = length(mvw.drift)
     deg = Matrix{Float64}(undef, r, n_deg)
-    indicators = unique(k[1] for k in keys(ρ))
+    indicators = collect(keys(mvw.drift))
 
     # Sort time and track types
     ordered_time_index = sortperm(time)
@@ -150,7 +152,7 @@ Return a DegradationData instance with simulated degradation data according to t
 The simulation is done on a time grid of length `K` with `N_i` time steps between each maintenance, and a time increment of `Δt`.
 May contain observations just before or just after the maintenance
 """
-function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], before::Bool=false, after::Bool=false, deletion::Bool=false)
+function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = collect(keys(mvw.drift)), before::Bool=false, after::Bool=false, deletion::Bool=false)
     r = length(mvw.drift)
     τ = convert(Vector{Float64}, [j*Δt*(N_i + 1) for j in 1:K])
     T = convert(Float64, τ[end] + Δt*N_i)

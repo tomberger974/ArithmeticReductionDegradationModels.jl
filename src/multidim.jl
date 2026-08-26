@@ -124,7 +124,7 @@ function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Extract model efficiencies and indicators
     ρ = mvw.efficiencies
-    indicators = unique(key[1] for key in keys(ρ))
+    indicators = collect(keys(mvw.drift))
 
     # Respectively number of maintenance actions and indicators
     K = nrow(degradationdata.maintenances)
@@ -176,7 +176,7 @@ function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Extract model efficiencies and indicators
     ρ = mvw.efficiencies
-    indicators = unique(key[1] for key in keys(ρ))
+    indicators = collect(keys(mvw.drift))
 
     # Respectively number of maintenance actions and indicators
     K = nrow(maint)
@@ -237,7 +237,7 @@ function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
 
     # Extract model efficiencies and indicators
     ρ = mvw.efficiencies
-    indicators = unique(key[1] for key in keys(ρ))
+    indicators = collect(keys(mvw.drift))
 
     # Define the needed objects
     A = observation_matrix(degradationdata, mvw)
@@ -262,7 +262,7 @@ function correlation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     DT = Diagonal(T)
 
     ρ = mvw.efficiencies
-    indicators = unique(key[1] for key in keys(ρ))
+    indicators = collect(keys(mvw.drift))
 
     AB = combine_matrices(degradationdata, mvw)
 

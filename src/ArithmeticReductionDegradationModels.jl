@@ -17,6 +17,7 @@ include("mle_ardinfinity.jl")
 include("mle_ard1.jl")
 
 #include("multidim_models.jl")
+include("multidim_objects.jl")
 include("multidim.jl")
 include("multidim_data_simu.jl")
 

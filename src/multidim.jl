@@ -1,88 +1,4 @@
 """
-    MaintenanceModels
-
-Abstract type for Maintenance Models
-"""
-abstract type MaintenanceModels end
-
-
-"""
-    ARD1 submodel of the ARD models
-"""
-struct ARD1 <: MaintenanceModels end
-
-"""
-    ARDinf submodel of the ARD models
-"""
-struct ARDinf <: MaintenanceModels end
-
-
-"""
-    Efficiency
-
-Efficiency object containing an imperfect maintenance model and a an efficiency value.
-
-Need to be linked with a tuple (indicator, maintenance type) to have meaning (cf. Efficiencies)
-"""
-mutable struct Efficiency
-    value::Float64
-    model::MaintenanceModels
-end
-
-
-"""
-    Efficiencies = Union{
-    Dict{Tuple{Symbol, Symbol}, Efficiency}, 
-    Dict{Tuple{Symbol, String}, Efficiency}, 
-    Dict{Tuple{String, Symbol}, Efficiency}, 
-    Dict{Tuple{String, String}, Efficiency}}
-
-Alias for a Union of different Dict in order to be able to use both string and symbols for the indicators or the maintenance type of the model.
-
-Pretty much a Dict linking each couple of indicator and maintenance type to an efficiency object containing an imperfect maintenance model and a an efficiency value.
-
-Order of arguments is mandatory: Efficiencies[indicator, maintenance_type]
-"""
-const Efficiencies = Union{
-    Dict{Tuple{Symbol, Symbol}, Efficiency}, 
-    Dict{Tuple{Symbol, String}, Efficiency}, 
-    Dict{Tuple{String, Symbol}, Efficiency}, 
-    Dict{Tuple{String, String}, Efficiency}}
-
-
-"""
-    MvWienerAR <: DPIM
-
-Abstract type for Degradation Process with Imperfect Maintenance.
-"""
-abstract type DPIM end
-
-
-"""
-    MvWienerAR <: DPIM
-
-Type for Multivariate Wiener degradation process with imperfect maintenance following a model of type AR.
-"""
-mutable struct MvWienerAR <: DPIM
-    drift::Vector{Float64}
-    volatility::Matrix{Float64}
-    efficiencies::Efficiencies
-
-    function MvWienerAR(drift::Vector{Float64}, volatility::Matrix{Float64}, efficiencies::Efficiencies)
-        s = length(drift)
-        if size(volatility, 1) != s || size(volatility, 2) != s
-            throw(ArgumentError("volatility must be square and match length(drift)=" * string(s)))
-        end
-        new(drift, volatility, efficiencies)
-    end
-end
-
-MvWienerAR(; drift::Vector{Float64}=zeros(Float64, 1), volatility::Matrix{Float64}=Matrix{Float64}(LinearAlgebra.I, 1, 1), efficiencies::Efficiencies=Dict((:ind1, :M) => Efficiency(.5, ARDinf()))) = MvWienerAR(drift, volatility, efficiencies)
-MvWienerAR(dim::Int64; efficiencies::Efficiencies) = MvWienerAR(zeros(dim), diagm(ones(dim)), efficiencies)
-
-Base.show(io::IO, mvw::MvWienerAR) = print(io, "μ=", mvw.drift, ", Σ=", mvw.volatility, ", ρ=", mvw.efficiencies)
-
-"""
     count_inspections(degradationdata::DegradationData)
 
 Return a vector containing the number of inspections occurring in each Inter-Maintenance-Interval (IMI).
@@ -328,14 +244,11 @@ function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
     B = ARDmatrix(degradationdata, mvw)
     C = Dict(ind => Matrix{Float64}(undef, length(A[ind]), size(B[ind], 2)) for ind in indicators)
 
-
     for ind in indicators
         Ap = A[ind]
-        println(Ap)
         Bp = B[ind]
 
         for i in eachindex(Ap)
-            println(C[ind])
             C[ind][i, :] = sum([Bp[j, :] for j in (i != 1 ? (Ap[i-1]+1:Ap[i]) : 1:Ap[i])])
         end
     end
@@ -345,4 +258,16 @@ end
 
 function correlation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
+    T = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
+    DT = Diagonal(T)
+
+    ρ = mvw.efficiencies
+    indicators = unique(key[1] for key in keys(ρ))
+
+    AB = combine_matrices(degradationdata, mvw)
+
+    truc = [AB[ind1] * DT * transpose(AB[ind2]) for ind1 in indicators, ind2 in indicators]
+    truc = reduce(vcat, [reduce(hcat, truc[i, :]) for i in axes(truc, 1)])
+
+    return Symmetric(truc)
 end

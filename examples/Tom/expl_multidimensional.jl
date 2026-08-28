@@ -11,13 +11,16 @@ using LinearAlgebra
 
 indicators = [:ind1, :ind2]
 maintenance_types = [:M, :C]
-mvw = ARD.MvWienerAR(indicators, maintenance_types)
+μ = Dict(ind => 1. for ind in indicators)
+Σ = Dict((ind1, ind2) => (ind1 == ind2 ? 1. : 0.) for ind1 in indicators, ind2 in indicators)
+ρ = Dict((ind, mt) => ARD.Efficiency(.5, ARD.ARDinf()) for ind in indicators, mt in maintenance_types)
+mvw = ARD.MvWienerAR(drift = μ, covariances = Σ, efficiencies = ρ)
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [:M, :C ], deletion=false, before=false, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 4, N_i = 5, τ_types = [:M, :C, :C, :M], deletion=false, before=false, after = false)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
-filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
+# filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
 
 ARD.ARDmatrix(degradationdata, mvw)[:ind1]
 ARD.ARDmatrix(degradationdata, mvw)[:ind2]
@@ -29,14 +32,13 @@ ARD.observation_matrix(degradationdata, mvw)[:ind2]
 
 ARD.combine_matrices(degradationdata, mvw)
 ARD.combine_matrices(degradationdata, mvw)[:ind1]
-inv(ARD.combine_matrices(degradationdata, mvw)[:ind2] * transpose(ARD.combine_matrices(degradationdata, mvw)[:ind2]))
+ARD.combine_matrices(degradationdata, mvw)[:ind2]
 
-ARD.correlation_matrix(degradationdata, mvw)
-inv(ARD.correlation_matrix(degradationdata, mvw))
-
-length(Dict(i => i for i in 1:5))
-
-
+ARD.observed_correlation_matrix(degradationdata, mvw)
+inv(ARD.observed_correlation_matrix(degradationdata, mvw))
+ARD.observed_drift(degradationdata, mvw)
+ARD.loglikelihood(degradationdata, mvw)
+fit_mle(degradationdata, mvw)
 
 
 ### Test for the insertion functions inside of matrices ###

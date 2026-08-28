@@ -15,8 +15,9 @@ import ArithmeticReductionDegradationModels as ARD
 include("nearest_time.jl")
 
 # Define the multilinear ARD processes
-μ = [2., 2.]
-Σ = [.4 .2; .2 .4]
+indicators = [:ind1, :ind2]
+μ = Dict(ind => 2. for ind in indicators)
+Σ = Dict((ind1, ind2) => (ind1 == ind2 ? 0.4 : 0.2) for ind1 in indicators, ind2 in indicators)
 ρ = Dict((:ind1, "P") => ARD.Efficiency(.5, ARD.ARD1()), (:ind2, "P") => ARD.Efficiency(.2, ARD.ARDinf()), (:ind1, "C") => ARD.Efficiency(.8, ARD.ARD1()), (:ind2, "C") => ARD.Efficiency(.5, ARD.ARDinf()), (:ind1, "T") => ARD.Efficiency(.9, ARD.ARD1()), (:ind2, "T") => ARD.Efficiency(.9, ARD.ARDinf()))
 mvw = ARD.MvWienerAR(μ, Σ, ρ)
 
@@ -57,8 +58,8 @@ fig = Figure(resolution = (1920, 1080))
     char2 = lines!(ax2, inspection_dates, X[2, :], color=:red, linewidth=1.)
 
     # Drift directing curve
-    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(ax2, inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[:ind1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(ax2, inspection_dates, mvw.drift[:ind2] .* inspection_dates, color=:red, alpha=0.5)
 
     ylims!(ax1, -2.5, 37.)
 
@@ -79,8 +80,8 @@ fig = Figure(resolution = (1920, 1080))
     char2 = lines!(ax1, inspection_dates, X[2, :], color=:red, linewidth=1.)
 
     # Drift directing curve
-    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(ax1, inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    drift_char1 = lines!(ax1, inspection_dates, mvw.drift[:ind1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(ax1, inspection_dates, mvw.drift[:ind2] .* inspection_dates, color=:red, alpha=0.5)
 
     ylims!(ax1, -2.5, 40.)
 
@@ -90,8 +91,11 @@ save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_1fig.png
 
 
 
-μ_list = [[1., 2.], [2., 2.], [2., 2.], [2., 2.]]
-Σ_list = [[.4 .2; .2 .4], [.4 .37; .37 .4], [2. .2; .2 .3], [.4 0.; 0. .4]]
+μ_list = [Dict(:ind1 => 1., :ind2 => 2.), Dict(ind => 2. for ind in indicators), Dict(ind => 2. for ind in indicators), Dict(ind => 2. for ind in indicators)]
+Σ_list = [Dict((ind1, ind2) => ind1==ind2 ? .4 : .2 for ind1 in indicators, ind2 in indicators),
+    Dict((ind1, ind2) => ind1==ind2 ? .4 : .37 for ind1 in indicators, ind2 in indicators),
+    Dict((:ind1, :ind1) => 2., (:ind1, :ind2) => .2, (:ind2, :ind1) => .2, (:ind2, :ind2) => .3),
+    Dict((ind1, ind2) => ind1==ind2 ? .4 : 0. for ind1 in indicators, ind2 in indicators)]
 
 for i in eachindex(μ_list)
     fig = Figure(resolution = (1920, 1080))
@@ -101,8 +105,8 @@ for i in eachindex(μ_list)
     X = ARD.mw_rand(mvw, inspection_dates)
     char1 = lines!(ax, inspection_dates, X[1, :], color=:blue, linewidth=1.)
     char2 = lines!(ax, inspection_dates, X[2, :], color=:red, linewidth=1.)
-    drift_char1 = lines!(ax, inspection_dates, mvw.drift[1] .* inspection_dates, color=:blue, alpha=0.5)
-    drift_char2 = lines!(ax, inspection_dates, mvw.drift[2] .* inspection_dates, color=:red, alpha=0.5)
+    drift_char1 = lines!(ax, inspection_dates, mvw.drift[:ind1] .* inspection_dates, color=:blue, alpha=0.5)
+    drift_char2 = lines!(ax, inspection_dates, mvw.drift[:ind2] .* inspection_dates, color=:red, alpha=0.5)
     ylims!(ax, -2.5, 40.)
     display(fig)
     save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_unmaintained_4mw$i.png", fig)

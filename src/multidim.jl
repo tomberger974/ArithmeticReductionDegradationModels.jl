@@ -174,8 +174,7 @@ function observation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
     deg = degradationdata.degradations
     maint = degradationdata.maintenances
 
-    # Extract model efficiencies and indicators
-    ρ = mvw.efficiencies
+    # Extract model indicators
     indicators = collect(keys(mvw.drift))
 
     # Respectively number of maintenance actions and indicators
@@ -235,8 +234,7 @@ Returns a dictionary linking each indicator to a matrix that construct the obser
 """
 function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
 
-    # Extract model efficiencies and indicators
-    ρ = mvw.efficiencies
+    # Extract indicators
     indicators = collect(keys(mvw.drift))
 
     # Define the needed objects
@@ -256,18 +254,102 @@ function combine_matrices(degradationdata::DegradationData, mvw::MvWienerAR)
     return C
 end
 
-function correlation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
+function observed_correlation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
     T = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
     DT = Diagonal(T)
 
-    ρ = mvw.efficiencies
     indicators = collect(keys(mvw.drift))
 
     AB = combine_matrices(degradationdata, mvw)
 
-    truc = [AB[ind1] * DT * transpose(AB[ind2]) for ind1 in indicators, ind2 in indicators]
-    truc = reduce(vcat, [reduce(hcat, truc[i, :]) for i in axes(truc, 1)])
+    Σ_O = [mvw.covariances[(ind1, ind2)] * AB[ind1] * DT * transpose(AB[ind2]) for ind1 in indicators, ind2 in indicators]
+    Σ_O = reduce(vcat, [reduce(hcat, Σ_O[i, :]) for i in axes(Σ_O, 1)])
 
-    return Symmetric(truc)
+    return Symmetric(Σ_O)
 end
+
+function observed_drift(degradationdata::DegradationData, mvw::MvWienerAR)
+
+    indicators = collect(keys(mvw.drift))
+
+    AB = combine_matrices(degradationdata, mvw)
+
+    T = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
+
+    μ_O = reduce(vcat, [mvw.drift[ind] * AB[ind] * T for ind in indicators])
+
+    return μ_O
+end
+
+function loglikelihood(degradationdata::DegradationData, mvw::MvWienerAR)
+    μ_O = observed_drift(degradationdata, mvw)
+    Σ_O = observed_correlation_matrix(degradationdata, mvw)
+
+    deg = degradationdata.degradations
+    maint = degradationdata.maintenances
+
+    indicators = collect(keys(mvw.drift))
+
+    # Observed increments
+    Y = reduce(vcat, [diff(vcat(0., sort(filter(row -> row.TYPE == ind, deg).VALUE))) for ind in indicators])
+
+    return logpdf(MvNormal(μ_O, Σ_O), Y)
+end
+
+function fit_mle(degradationdata::DegradationData, mvw::MvWienerAR)
+    fitted_mvw = deepcopy(mvw)
+    return fit_mle!(degradationdata, fitted_mvw)
+end
+
+fit_mle(mvw::MvWienerAR, degradationdata::DegradationData) = fit_mle(degradationdata, mvw)
+
+function fit_mle!(degradationdata::DegradationData, mvw::MvWienerAR)
+    indicators = sort!(collect(keys(mvw.drift)), by=string)
+    covariance_keys = [(ind1, ind2) for (i, ind1) in enumerate(indicators) for (j, ind2) in enumerate(indicators) if i <= j]
+    efficiency_keys = sort!(collect(keys(mvw.efficiencies)), by=key -> (string(key[1]), string(key[2])))
+
+    initial = vcat(
+        [mvw.drift[ind] for ind in indicators],
+        [mvw.covariances[key] for key in covariance_keys],
+        [mvw.efficiencies[key].value for key in efficiency_keys]
+    )
+
+    drift_end = length(indicators)
+    covariance_end = drift_end + length(covariance_keys)
+
+    function update_model!(mvw, parameters)
+        for (index, indicator) in enumerate(indicators)
+            mvw.drift[indicator] = parameters[index]
+        end
+        for (index, (ind1, ind2)) in enumerate(covariance_keys)
+            value = parameters[drift_end + index]
+            mvw.covariances[(ind1, ind2)] = value
+            mvw.covariances[(ind2, ind1)] = value
+        end
+        for (index, key) in enumerate(efficiency_keys)
+            mvw.efficiencies[key].value = parameters[covariance_end + index]
+        end
+    end
+
+    function objective(parameters)
+        if any(!isfinite, parameters)
+            return Inf
+        end
+
+        update_model!(mvw, parameters)
+
+        try
+            value = -loglikelihood(degradationdata, mvw)
+            return isfinite(value) ? value : Inf
+        catch error
+            return error isa PosDefException ? Inf : rethrow()
+        end
+    end
+
+    result = optimize(objective, initial)
+    update_model!(mvw, result.minimizer)
+    return mvw
+end
+
+fit_mle!(mvw::MvWienerAR, degradationdata::DegradationData) = fit_mle!(degradationdata, mvw)

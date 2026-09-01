@@ -763,3 +763,129 @@ I
     # Display and save the figure
     display(fig)
     save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_main_figure_laurent_version.png", fig)
+
+
+
+fig = Figure(resolution = (1920, 1080))
+
+    # Axis definition for the first figure
+    ax1 = Axis(fig[1, 1],
+        xticks=([], []), xgridvisible=false,
+        ylabel = L"(1)", ygridvisible=false, ylabelsize=lbsize2)
+    axτ1 = Axis(fig[1, 1], 
+        xaxisposition=:top, xlabel="Maintenance Date", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize2,
+        yticks=([], []), yticklabelsvisible=false, ygridvisible=false)
+    linkxaxes!(ax1, axτ1)
+    linkyaxes!(ax1, axτ1)
+    ax2 = Axis(fig[2, 1],
+        xticks=([], []), xgridvisible=false,
+        ylabel = L"(2)", ygridvisible=false, ylabelsize=lbsize2)
+    linkxaxes!(ax1, ax2)
+    linkyaxes!(ax1, ax2)
+    ax3 = Axis(fig[3, 1], ylabel = L"(1)and(2)", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
+
+
+    # Main Wiener process trajectory
+    char1 = lines!(ax1, inspection_dates, Y1, color=:blue, linewidth=1.)
+    char2 = lines!(ax2, inspection_dates, Y∞, color=:red, linewidth=1.)
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax2, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax2, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax2, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax3, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax3, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax3, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
+
+    ylims!(ax1, -2.5, 35.)
+    ylims!(ax2, -2.5, 35.)
+    ylims!(ax3, -2.5, 40.)
+
+    # Add observation points with red color and bigger markersize
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], Y1[I_char1], color=:black, markersize=20.)
+    observations_char2 = scatter!(ax2, inspection_dates[I_char2], Y∞[I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+    vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+
+    # Add observation points with red color and bigger markersize
+    observations_char1 = scatter!(ax3, inspection_dates[I], X[1, I], color=:black, marker=:star6, markersize=20.)
+    observations_char1 = scatter!(ax3, inspection_dates[I], X[2, I], color=:black, marker=:star6,markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+
+    # Main Wiener process trajectory
+    char1 = lines!(ax3, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax3, inspection_dates, X[2, :], color=:red, linewidth=1.)
+
+    #all virtual increments
+    ps=Point2f.([(t, 0) for t in sort(vcat(0., inspection_dates[I], τ))])
+    text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
+    for i in 1:length(ps)-1
+        arrows2d!(ax3, ps[i], ps[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+    end
+
+    # Display and save the figure
+    display(fig)
+    save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_Laurent_figure_redo.png", fig)
+
+
+
+
+    # Axis definition
+    ax1 = Axis(fig[1, 1], ylabel = "Degradation level", ylabelsize=lbsize2, xlabel = "Time", xlabelsize=lbsize2, xgridvisible=false)
+
+    # Main Wiener process trajectory
+    char1 = lines!(ax1, inspection_dates, X[1, :], color=:blue, linewidth=1.)
+    char2 = lines!(ax1, inspection_dates, X[2, :], color=:red, linewidth=1.)
+
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax1, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
+
+    ylims!(ax1, -2.5, 35.)
+
+    # Add observation points with red color and bigger markersize
+    observations_char1 = scatter!(ax1, inspection_dates[I_char1], X[1, I_char1], color=:black, markersize=20.)
+    observations_char1 = scatter!(ax1, inspection_dates[I_char2], X[2, I_char2], color=:black, markersize=20.)
+    vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
+
+    # Add text for number of observations
+    text!(ax1, (0. + τ[1]) / 2 - 1., 15., text=L"\mathcal{N}_1 = 2", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[1] + τ[2]) / 2 - .5, 15., text=L"\mathcal{N}_2 = 1", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[2] + τ[3]) / 2 - .5, 15., text=L"\mathcal{N}_3 = 0", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[3] + τ[4]) / 2 - .5, 15., text=L"\mathcal{N}_4 = 1", color=:black, fontsize=lbsize)
+    text!(ax1, (τ[4] + T) / 2 - 1., 15., text=L"\mathcal{N}_5 = 3", color=:black, fontsize=lbsize)
+
+    #all virtual increments
+    ps=Point2f.([(t, 0) for t in sort(vcat(0., inspection_dates[I], τ))])
+    text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
+    for i in 1:length(ps)-1
+        arrows2d!(ax1, ps[i], ps[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+        text!(ax1, (ps[i][1] + ps[i+1][1]) / 2 - .5, -2, text=text_virtual_var[i], color=:black, fontsize=lbsize - 5)
+    end
+
+    # virtual increments for the sole last observations of the second characteristic
+    #ps=Point2f.([(t, 0) for t in inspection_dates[I][end-2:end]])
+    #for i in 1:length(ps)-1
+    #    arrows2d!(ax1, ps[i], ps[i+1],
+    #    argmode = :endpoint,
+    #    tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+    #    )
+    #    text!(ax1, (ps[i][1] + ps[i+1][1]) / 2 - .5, -2, text=text_virtual_var[i], color=:black, fontsize=lbsize - 5)
+    #end
+I
+    # Display and save the figure
+    display(fig)

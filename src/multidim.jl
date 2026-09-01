@@ -145,12 +145,12 @@ function ARDmatrix(degradationdata::DegradationData, mvw::MvWienerAR)
                 latentjumps[i] = Insertion{Float64}(
                     subdivision_cumulative_length[i] + i,
                     i != 1 ? subdivision_cumulative_length[i-1] + i : 1, subdivision_cumulative_length[i] + i - 1,
-                    ρuip.value)
+                    -ρuip.value)
             elseif ρuip.model isa ARDinf
                 latentjumps[i] = Insertion{Float64}(
                     subdivision_cumulative_length[i] + i,
                     1, subdivision_cumulative_length[i] + i - 1,
-                    ρuip.value)
+                    -ρuip.value)
             end
         end
 
@@ -256,8 +256,9 @@ end
 
 function observed_correlation_matrix(degradationdata::DegradationData, mvw::MvWienerAR)
 
-    T = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
-    DT = Diagonal(T)
+    dates = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
+    time_increments = diff(vcat(0.0, dates))
+    DT = Diagonal(time_increments)
 
     indicators = collect(keys(mvw.drift))
 
@@ -275,9 +276,10 @@ function observed_drift(degradationdata::DegradationData, mvw::MvWienerAR)
 
     AB = combine_matrices(degradationdata, mvw)
 
-    T = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
+    dates = sort(unique(vcat(degradationdata.degradations.DATE, degradationdata.maintenances.DATE)))
+    time_increments = diff(vcat(0.0, dates))
 
-    μ_O = reduce(vcat, [mvw.drift[ind] * AB[ind] * T for ind in indicators])
+    μ_O = reduce(vcat, [mvw.drift[ind] * AB[ind] * time_increments for ind in indicators])
 
     return μ_O
 end
@@ -287,12 +289,10 @@ function loglikelihood(degradationdata::DegradationData, mvw::MvWienerAR)
     Σ_O = observed_correlation_matrix(degradationdata, mvw)
 
     deg = degradationdata.degradations
-    maint = degradationdata.maintenances
-
     indicators = collect(keys(mvw.drift))
 
     # Observed increments
-    Y = reduce(vcat, [diff(vcat(0., sort(filter(row -> row.TYPE == ind, deg).VALUE))) for ind in indicators])
+    Y = reduce(vcat, [diff(vcat(0., sort(filter(row -> row.TYPE == ind, deg), :DATE).VALUE)) for ind in indicators])
 
     return logpdf(MvNormal(μ_O, Σ_O), Y)
 end

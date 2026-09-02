@@ -13,8 +13,13 @@ import ArithmeticReductionDegradationModels as ARD
 
 include("nearest_time.jl")
 
-nlwienerard1 = ARD.NLWienerARD1(2., .25, .5, 1., Dict("P" => .4, "C" => .9, "T" => .6))
-nlwienerard∞ = ARD.NLWienerARD∞(2., .25, .5, 1., Dict("P" => .4, "C" => .9, "T" => .6))
+μ = 2.
+σ = .25
+α = .5
+β = 1.
+ρ = Dict("P" => .4, "C" => .9, "T" => .6)
+nlwienerard1 = ARD.NLWienerARD1(μ, σ, α, β, ρ)
+nlwienerard∞ = ARD.NLWienerARD∞(μ, σ, α, β, ρ)
 
 
 # Inspection dates
@@ -23,6 +28,7 @@ inspection_dates = convert(Vector{Float64}, range(0, T, 500))
 
 # Maintenance dates
 τ = T .* [.17, .4, .5, .7, .9]
+maint_types = unique(key for key in keys(ρ))
 maintenances = DataFrame(DATE=τ, TYPE=["P", "C", "P", "P", "T"])
 
 #if there is only one time stop τ there is no difference between ARD1 and ARD∞
@@ -102,11 +108,9 @@ fig = Figure()
     linkyaxes!(ax, axτ)
 
     # Maintenance dates illustration with dashed colored vertical lines
-    maint_type1 = vlines!(τ[1], linestyle=:dash, color=:cyan)
-    maint_type2 = vlines!(τ[2], linestyle=:dash, color=:purple)
-    vlines!(τ[3], linestyle=:dash, color=:cyan)
-    vlines!(τ[4], linestyle=:dash, color=:cyan)
-    maint_type3 = vlines!(τ[5], linestyle=:dash, color=:orange)
+    maint_type1 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
 
     # Plot ARD trajectories
     ARD∞_plot = lines!(ax, inspection_dates, Y1, color=:red, linewidth=1.)
@@ -149,11 +153,9 @@ fig = Figure()
     linkyaxes!(ax, axτ)
 
     # Maintenance dates illustration with dashed colored vertical lines
-    maint_type1 = vlines!(τ[1], linestyle=:dash, color=:cyan)
-    maint_type2 = vlines!(τ[2], linestyle=:dash, color=:purple)
-    vlines!(τ[3], linestyle=:dash, color=:cyan)
-    vlines!(τ[4], linestyle=:dash, color=:cyan)
-    maint_type3 = vlines!(τ[5], linestyle=:dash, color=:orange)
+    maint_type1 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
 
     # Plot ARD trajectories
     ARD1_plot = lines!(ax, inspection_dates, Y∞, color=:blue, linewidth=1.)
@@ -188,12 +190,10 @@ fig = Figure()
     linkxaxes!(ax, axτ)
     linkyaxes!(ax, axτ)
 
-    # Maintenance datesillustration with dashed colored vertical lines
-    maint_type1 = vlines!(τ[1], linestyle=:dash, color=:cyan)
-    maint_type2 = vlines!(τ[2], linestyle=:dash, color=:purple)
-    vlines!(τ[3], linestyle=:dash, color=:cyan)
-    vlines!(τ[4], linestyle=:dash, color=:cyan)
-    maint_type3 = vlines!(τ[5], linestyle=:dash, color=:orange)
+    # Maintenance dates illustration with dashed colored vertical lines
+    maint_type1 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
 
     # Plot ARD1 trajectory
     ARD1_plot = lines!(ax, inspection_dates, Y∞, linewidth=1., color=:blue)
@@ -222,11 +222,9 @@ fig = Figure()
     linkyaxes!(ax, axτ)
 
     # Maintenance dates illustration with dashed colored vertical lines
-    maint_type1 = vlines!(τ[1], linestyle=:dash, color=:cyan)
-    maint_type2 = vlines!(τ[2], linestyle=:dash, color=:purple)
-    vlines!(τ[3], linestyle=:dash, color=:cyan)
-    vlines!(τ[4], linestyle=:dash, color=:cyan)
-    maint_type3 = vlines!(τ[5], linestyle=:dash, color=:orange)
+    maint_type1 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[1]], linestyle=:dash, color=:green, linewidth=3.)
+    maint_type2 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[2]], linestyle=:dash, color=:magenta, linewidth=3.)
+    maint_type3 = vlines!(ax, [τ[i] for i in eachindex(τ) if maintenances[i, "TYPE"] == maint_types[3]], linestyle=:dash, color=:brown, linewidth=3.)
 
     # Plot ARD1 trajectory
     ARD1_plot = lines!(ax, inspection_dates, Y∞, linewidth=1., color=:blue)

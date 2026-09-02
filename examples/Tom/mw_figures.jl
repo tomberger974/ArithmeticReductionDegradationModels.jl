@@ -815,8 +815,8 @@ fig = Figure(resolution = (1920, 1080))
     vlines!(ax2, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Add observation points with red color and bigger markersize
-    observations_char1 = scatter!(ax3, inspection_dates[I], X[1, I], color=:black, marker=:star6, markersize=20.)
-    observations_char1 = scatter!(ax3, inspection_dates[I], X[2, I], color=:black, marker=:star6,markersize=20.)
+    observations_char1 = scatter!(ax3, inspection_dates[vcat(I, nearest_time(τ, inspection_dates))], X[1, vcat(I, nearest_time(τ, inspection_dates))], color=:black, marker=:star6, markersize=20.)
+    observations_char1 = scatter!(ax3, inspection_dates[vcat(I, nearest_time(τ, inspection_dates))], X[2, vcat(I, nearest_time(τ, inspection_dates))], color=:black, marker=:star6,markersize=20.)
     vlines!(ax1, inspection_dates[I], color=:grey, linestyle=:dash, linewidth=1., alpha=0.5)
 
     # Main Wiener process trajectory

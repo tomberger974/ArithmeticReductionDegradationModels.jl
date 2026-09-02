@@ -9,18 +9,18 @@ import ArithmeticReductionDegradationModels as ARD
 using DataFrames
 using LinearAlgebra
 
-indicators = [:ind1]
-maintenance_types = ["M"]
+indicators = [:ind1, :ind2]
+maintenance_types = ["M", "C"]
 μ = Dict(ind => 1. for ind in indicators)
 Σ = Dict((ind1, ind2) => (ind1 == ind2 ? 1. : 0.) for ind1 in indicators, ind2 in indicators)
 ρ = Dict((ind, mt) => ARD.Efficiency(.5, ind == :ind1 ? ARD.ARD1() : ARD.ARDinf()) for ind in indicators, mt in maintenance_types)
 mvw = ARD.MvWienerAR(drift = μ, covariances = Σ, efficiencies = ρ)
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [maintenance_types[1], maintenance_types[1]], deletion=false, before=true, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [maintenance_types[1], maintenance_types[2]], deletion=false, before=false, after = false)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 ARD.rand!(mvw, degradationdata)
-# filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
+filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
 
 ARD.ARDmatrix(degradationdata, mvw)
 ARD.ARDmatrix(degradationdata, mvw)[:ind1]
@@ -39,7 +39,7 @@ inv(ARD.observed_correlation_matrix(degradationdata, mvw))
 ARD.observed_drift(degradationdata, mvw)
 ARD.loglikelihood(degradationdata, mvw)
 fit_mle(degradationdata, mvw)
-sqrt(.09)
+
 #ARD1 parameters
 wienerARD1 = WienerARD∞(["M", "C"], 0., 1., [.5, .5])
 fit_mle(wienerARD∞, degradationdata)

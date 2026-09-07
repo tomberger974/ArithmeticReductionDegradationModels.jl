@@ -115,15 +115,15 @@ end
 
 ##### BIVARIATE ARD1 PROCESS WITH FIVE MAINTENANCE ACTIONS, MAIN FIGURE ######
 # Inspection dates indices
-I = [18, 56, 102, 270, 410, 464, 500]
-I_char1 = I[[3, 4, 5, 7]]
-I_char2 = I[[1, 2, 6, 7]]
+I = [1, 25, 70, 102, 270, 410, 464, 500]
+I_char1 = I[[1, 4, 5, 6, 8]]
+I_char2 = I[[1, 2, 3, 7, 8]]
 
 # ARD1 figure
 fig = Figure(resolution = (1920, 1080))
 
     # Axis definition for the first figure
-    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     axτ1 = Axis(fig[1, 1], 
         xaxisposition=:top, xlabel="Maintenance Date", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false)
@@ -132,7 +132,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -140,7 +140,7 @@ fig = Figure(resolution = (1920, 1080))
     linkxaxes!(ax1, ax_sep)
 
     # Axis definition for the second figure (now in row 3)
-    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 3}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     linkxaxes!(ax1, ax2)
     linkyaxes!(ax1, ax2)
     
@@ -195,7 +195,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -259,7 +259,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -340,7 +340,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -412,7 +412,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -501,7 +501,7 @@ fig = Figure(resolution = (1920, 1080))
     text!(ax1, (τ[4] + T) / 2 - 1., 15., text=L"\mathcal{N}_5 = 3", color=:black, fontsize=lbsize)
 
     #all virtual increments
-    ps=Point2f.([(t, 0) for t in sort(vcat(0., inspection_dates[I], τ))])
+    ps=Point2f.([(t, 0) for t in sort(vcat(0., inspection_dates[I[2:end]], τ))])
     text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
     for i in 1:length(ps)-1
         arrows2d!(ax1, ps[i], ps[i+1],
@@ -558,7 +558,7 @@ fig = Figure(resolution = (1920, 1080))
     text!(ax1, (τ[4] + T) / 2 - 1., 15., text=L"\mathcal{N}_5 = 3", color=:black, fontsize=lbsize)
 
     #all virtual increments
-    ps=Point2f.([(t, 30.) for t in sort(vcat(0., inspection_dates[I], τ))])
+    ps=Point2f.([(t, 30.) for t in sort(vcat(0., inspection_dates[I[2:end]], τ))])
     text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
     for i in 1:length(ps)-1
         arrows2d!(ax1, ps[i], ps[i+1],
@@ -569,7 +569,7 @@ fig = Figure(resolution = (1920, 1080))
     end
 
     # observed increments for the sole last observations of the first characteristic
-    ps1=Point2f.([(t, 0.) for t in vcat(0., inspection_dates[I_char1])])
+    ps1=Point2f.([(t, 0.) for t in vcat(0., inspection_dates[I_char1[2:end]])])
     text_obs_var = [L"Z_0^{(1)}", L"Z_1^{(1)}", L"Z_2^{(1)}", L"\Delta Y_{3, 2}"]
     for i in 1:length(ps1)-1
         arrows2d!(ax1, ps1[i], ps1[i+1],
@@ -585,11 +585,10 @@ I
 
 
 
-
 fig = Figure(resolution = (1920, 1080))
 
     # Axis definition for the first figure
-    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     axτ1 = Axis(fig[1, 1], 
         xaxisposition=:top, xlabel="Maintenance Date", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false)
@@ -598,7 +597,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -606,7 +605,7 @@ fig = Figure(resolution = (1920, 1080))
     linkxaxes!(ax1, ax_sep)
 
     # Axis definition for the second figure (now in row 3)
-    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 3}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     linkxaxes!(ax1, ax2)
     linkyaxes!(ax1, ax2)
     
@@ -659,7 +658,7 @@ fig = Figure(resolution = (1920, 1080))
 fig = Figure(resolution = (1920, 1080))
 
     # Axis definition for the first figure
-    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax1 = Axis(fig[1, 1], xticks=(inspection_dates[I_char1], [L"t_{\nu_1^{(1)}, \phi_{1, 1}^{(1)}}", L"t_{\nu_2^{(1)}, \phi_{2, 1}^{(1)}}", L"t_{\nu_3^{(1)}, \phi_{3, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 1}^{(1)}}", L"t_{\nu_4^{(1)}, \phi_{4, 2}^{(1)}}"]), ylabel = L"\textrm{Characteristic } (1): ARD_1", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     axτ1 = Axis(fig[1, 1], 
         xaxisposition=:top, xlabel="Maintenance Date", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false)
@@ -668,7 +667,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # New minimal x-axis separator
     ax_sep = Axis(fig[2, 1], 
-        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
+        xlabel="Inspection Date", xticks=(inspection_dates[I], [L"t_{1, 1}", L"t_{1, 2}", L"t_{1, 3}", L"t_{2, 1}", L"t_{4, 1}", L"t_{5, 1}", L"t_{5, 2}", L"t_{5, 3}"]), xticklabelsize=lbsize, xlabelsize=lbsize2,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false, xgridvisible=false,
         height=80)  # Small height for separator
     hidespines!(ax_sep, :l, :r, :t)
@@ -676,7 +675,7 @@ fig = Figure(resolution = (1920, 1080))
     linkxaxes!(ax1, ax_sep)
 
     # Axis definition for the second figure (now in row 3)
-    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
+    ax2 = Axis(fig[3, 1], xticks=(inspection_dates[I_char2], [L"t_{\nu_1^{(2)}, \phi_{1, 1}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 2}^{(2)}}", L"t_{\nu_1^{(2)}, \phi_{1, 3}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 1}^{(2)}}", L"t_{\nu_2^{(2)}, \phi_{2, 2}^{(2)}}"]), ylabel = L"\textrm{Characteristic } (2): ARD_\infty", ylabelsize=lbsize2, xgridvisible=false, xticklabelsize=lbsize, ygridvisible=false)
     linkxaxes!(ax1, ax2)
     linkyaxes!(ax1, ax2)
     
@@ -711,7 +710,7 @@ fig = Figure(resolution = (1920, 1080))
     axislegend(ax2, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(2)} =0.2", L"\rho_2^{(2)} =0.5", L"\rho_3^{(2)} = 0.9"], position = :lt, labelsize=lbsize2)
 
     # virtual increments for the sole last observations of the first characteristic
-    ps1=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char1])])
+    ps1=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char1[2:end]])])
     text_obs_var = [L"Z_0^{(1)}", L"Z_1^{(1)}", L"Z_2^{(1)}", L"\Delta Y_{3, 2}^{(1)}"]
     for i in 1:length(ps1)-1
         arrows2d!(ax1, ps1[i], ps1[i+1],
@@ -722,7 +721,7 @@ fig = Figure(resolution = (1920, 1080))
     end
 
     # virtual increments for the sole last observations of the second characteristic
-    ps2=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char2])])
+    ps2=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char2[2:end]])])
     text_obs_var = [L"\Delta X_{1, 1}^{(2)}", L"\Delta Y_{1, 2}^{(2)}", L"Z_1^{(2)}", L"\Delta Y_{2, 2}^{(2)}"]
     for i in 1:length(ps2)-1
         arrows2d!(ax2, ps2[i], ps2[i+1],

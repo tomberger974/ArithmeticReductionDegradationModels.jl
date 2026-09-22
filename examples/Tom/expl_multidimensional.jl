@@ -41,8 +41,8 @@ ARD.loglikelihood(degradationdata, mvw)
 fit_mle(degradationdata, mvw)
 
 #ARD1 parameters
-wienerARD1 = WienerARD∞(["M", "C"], 0., 1., [.5, .5])
-fit_mle(wienerARD∞, degradationdata)
+wienerARD∞ = WienerARD∞(["M", "C"], 0., 1., [.5, .5])
+ARD.fit_mle(wienerARD∞, degradationdata)
 loglikelihood(wienerARD∞, [degradationdata], vcat(0., 1., [.5, .5]))
 
 
@@ -121,7 +121,7 @@ ARD.combine_matrices(degradationdata, mvw)[:ind2]
 
 
 # with after only
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [:M, :C ], deletion=false, before=false, after = true)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = ["M", "C"], deletion=false, before=false, after = true)
 ARD.rand!(mvw, degradationdata)
 filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
 

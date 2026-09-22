@@ -2,7 +2,9 @@
     mw_rand(mvw::MvWienerAR, inspection_dates::Vector{Float64})
 
 Simulate a wiener process with drift according to the parameters of `mward` at the time points given in `time`.
+
 The simulation is done by simulating the increments of the process according to the distribution of the increments of a Wiener process with drift and then by taking the cumulative sum of these increments.
+
 Works only if the different dimensions are observed at the same time points.
 """
 function mw_rand(mvw::MvWienerAR, inspection_dates::Vector{Float64})
@@ -28,8 +30,10 @@ end
     rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::DataFrame)
 
 Simulate a wiener process with drift according to the parameters of `mward` at the time points given in `inspection_dates` and with adjustments for maintenance effects according to the parameters of `mward` and the dates and types of maintenances given in `maintenances`.
+
 The simulation is done by simulating firstly an unmaintained process with `mw_rand` and then by adjusting the values of the process after each maintenance according to the type of maintenance and the corresponding efficiency given in `mward`.
-Does not work currently for after and before cases
+
+Does not work currently for after and before cases.
 """
 function rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::DataFrame)
 
@@ -80,6 +84,7 @@ end
     rand!(mvw::MvWienerAR, degradationdata::DegradationData)
 
 Simulate a wiener process with drift according to the parameters of `mward` at the time points given in `inspection_dates` and with adjustments for maintenance effects according to the parameters of `mward` and the dates and types of maintenances given in `maintenances`.
+
 The simulation is done by simulating firstly an unmaintained process with `mw_rand` and then by adjusting the values of the process after each maintenance according to the type of maintenance and the corresponding efficiency given in `mward`.
 """
 function rand!(mvw::MvWienerAR, degradationdata::DegradationData)
@@ -95,6 +100,7 @@ end
     delete_observations!(degradationdata::DegradationData)
 
 Randomly delete some observations in the degradations DataFrame of `degradationdata`.
+
 This function is used to test the ability of the estimation methods to handle unsynchonized data.
 """
 function delete_observations!(degradationdata::DegradationData)
@@ -128,29 +134,14 @@ function delete_observations!(degradationdata::DegradationData)
     return degradationdata
 end
 
-"""   
-    count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
-    
-Return a vector of the same length as `inspection_dates` with the number of maintenances before each inspection date.
-This function is used to fill the column NB_MAINTENANCES of the DataFrame degradations of a DegradationData instance.
-"""
-function count_NB_MAINTENANCES(maintenance_dates::Vector{Float64}, inspection_dates::Vector{Float64})
-    n = length(inspection_dates)
-    NB_MAINTENANCES = zeros(Int, n)
-    
-    for i in 1:n
-        NB_MAINTENANCES[i] = sum(maintenance_dates .< inspection_dates[i])
-    end
-
-    return NB_MAINTENANCES
-end
-
 """
     DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], before::Bool=false, after::Bool=false, deletion::Bool=false)
     
 Return a DegradationData instance with simulated degradation data according to the multidimensional Wiener process with drift and ARD maintenance model `mvw`.
+
 The simulation is done on a time grid of length `K` with `N_i` time steps between each maintenance, and a time increment of `Δt`.
-May contain observations just before or just after the maintenance
+
+May contain observations just before or just after the maintenance.
 """
 function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = collect(keys(mvw.drift)), before::Bool=false, after::Bool=false, deletion::Bool=false)
     r = length(mvw.drift)

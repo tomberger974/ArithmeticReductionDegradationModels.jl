@@ -385,7 +385,7 @@ fig = Figure(resolution = (1920, 1080))
     axislegend(ax2, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(2)} =0.2", L"\rho_2^{(2)} =0.5", L"\rho_3^{(2)} = 0.9"], position = :lt, labelsize=lbsize2)
 
     # Add text for number of observations
-    text!(ax1, (0. + τ[1]) / 2 - 1., 15., text=L"\mathcal{N}_1 = 2", color=:black, fontsize=lbsize)
+    text!(ax1, (0. + τ[1]) / 2 - 1., 15., text=L"\mathcal{N}_1 = 3", color=:black, fontsize=lbsize)
     text!(ax1, (τ[1] + τ[2]) / 2 - .5, 15., text=L"\mathcal{N}_2 = 1", color=:black, fontsize=lbsize)
     text!(ax1, (τ[2] + τ[3]) / 2 - .5, 15., text=L"\mathcal{N}_3 = 0", color=:black, fontsize=lbsize)
     text!(ax1, (τ[3] + τ[4]) / 2 - .5, 15., text=L"\mathcal{N}_4 = 1", color=:black, fontsize=lbsize)
@@ -394,7 +394,6 @@ fig = Figure(resolution = (1920, 1080))
     # Display and save the figure
     display(fig)
     save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\mw_main_figure_virtual_numerotation.png", fig)
-
 
 # Text for number of inspections, without the φ in the x-axis labels
 # ARD1 figure
@@ -405,7 +404,7 @@ fig = Figure(resolution = (1920, 1080))
         xticks=([], []), xgridvisible=false,
         ylabel = L"\textrm{Characteristic } (1): ARD_1", ygridvisible=false, ylabelsize=lbsize2)
     axτ1 = Axis(fig[1, 1], 
-        xaxisposition=:top, xlabel=L"\textrm{Maintenance Date}-\mathcal{K} = 5", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize,
+        xaxisposition=:top, xlabel=L"\textrm{Maintenance Date}-\mathcal{K} = 4", xticks=(τ, [L"\tau_{%$i}" for i in eachindex(τ)]), xgridvisible=false, xticklabelsize=lbsize, xlabelsize=lbsize,
         yticks=([], []), yticklabelsvisible=false, ygridvisible=false)
     linkxaxes!(ax1, axτ1)
     linkyaxes!(ax1, axτ1)
@@ -457,12 +456,13 @@ fig = Figure(resolution = (1920, 1080))
     axislegend(ax2, merge = true, [maint_type1, maint_type2, maint_type3], [L"\rho_1^{(2)} =0.2", L"\rho_2^{(2)} =0.5", L"\rho_3^{(2)} = 0.9"], position = :lt, labelsize=lbsize2)
 
     # Add text for number of observations for the first characteristic
-    text!(ax1, [((τ[1] + τ[2]) / 2 - .5, 15.), ((τ[1] + τ[2]) / 2 - .5, 25.)], text=[L"N_1^{(1)} = 1", L"\nu_1^{(1)} = 2"], color=:black, fontsize=lbsize)
-    text!(ax1, [((τ[3] + τ[4]) / 2 - .5, 15.), ((τ[3] + τ[4]) / 2 - .5, 25.)], text=[L"N_2^{(1)} = 1", L"\nu_2^{(1)} = 4"], color=:black, fontsize=lbsize)
-    text!(ax1, [((τ[4] + T) / 2 - .5, 15.), ((τ[4] + T) / 2 - .5, 25.)], text=[L"N_3^{(1)} = 2", L"\nu_3^{(1)} = 5"], color=:black, fontsize=lbsize)
+    text!(ax1, [((0. + τ[1]) / 2 - .5, 15.), ((0. + τ[1]) / 2 - .5, 25.)], text=[L"N_1^{(1)} = 1", L"\nu_1^{(1)} = 1"], color=:black, fontsize=lbsize)
+    text!(ax1, [((τ[1] + τ[2]) / 2 - .5, 15.), ((τ[1] + τ[2]) / 2 - .5, 25.)], text=[L"N_2^{(1)} = 1", L"\nu_2^{(1)} = 2"], color=:black, fontsize=lbsize)
+    text!(ax1, [((τ[3] + τ[4]) / 2 - .5, 15.), ((τ[3] + τ[4]) / 2 - .5, 25.)], text=[L"N_3^{(1)} = 1", L"\nu_3^{(1)} = 4"], color=:black, fontsize=lbsize)
+    text!(ax1, [((τ[4] + T) / 2 - .5, 15.), ((τ[4] + T) / 2 - .5, 25.)], text=[L"N_4^{(1)} = 2", L"\nu_4^{(1)} = 5"], color=:black, fontsize=lbsize)
 
     # Add text for number of observations for the second characteristic
-    text!(ax2, [((0. + τ[1]) / 2 - .5, 15.), ((0. + τ[1]) / 2 - .5, 25.)], text=[L"N_1^{(2)} = 2", L"\nu_1^{(2)} = 1"], color=:black, fontsize=lbsize)
+    text!(ax2, [((0. + τ[1]) / 2 - .5, 15.), ((0. + τ[1]) / 2 - .5, 25.)], text=[L"N_1^{(2)} = 3", L"\nu_1^{(2)} = 1"], color=:black, fontsize=lbsize)
     text!(ax2, [((τ[4] + T) / 2 - .5, 15.), ((τ[4] + T) / 2 - .5, 25.)], text=[L"N_2^{(2)} = 2", L"\nu_2^{(2)} = 5"], color=:black, fontsize=lbsize)
 
     # Display and save the figure
@@ -502,7 +502,7 @@ fig = Figure(resolution = (1920, 1080))
 
     #all virtual increments
     ps=Point2f.([(t, 0) for t in sort(vcat(0., inspection_dates[I[2:end]], τ))])
-    text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
+    text_virtual_var = [L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{1, 4}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
     for i in 1:length(ps)-1
         arrows2d!(ax1, ps[i], ps[i+1],
         argmode = :endpoint,
@@ -559,7 +559,7 @@ fig = Figure(resolution = (1920, 1080))
 
     #all virtual increments
     ps=Point2f.([(t, 30.) for t in sort(vcat(0., inspection_dates[I[2:end]], τ))])
-    text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
+    text_virtual_var = [L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{1, 4}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
     for i in 1:length(ps)-1
         arrows2d!(ax1, ps[i], ps[i+1],
         argmode = :endpoint,
@@ -711,7 +711,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # virtual increments for the sole last observations of the first characteristic
     ps1=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char1[2:end]])])
-    text_obs_var = [L"Z_0^{(1)}", L"Z_1^{(1)}", L"Z_2^{(1)}", L"\Delta Y_{3, 2}^{(1)}"]
+    text_obs_var = [L"Z_1^{(1)}", L"Z_2^{(1)}", L"Z_3^{(1)}", L"\Delta Y_{4, 2}^{(1)}"]
     for i in 1:length(ps1)-1
         arrows2d!(ax1, ps1[i], ps1[i+1],
         argmode = :endpoint,
@@ -722,7 +722,7 @@ fig = Figure(resolution = (1920, 1080))
 
     # virtual increments for the sole last observations of the second characteristic
     ps2=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char2[2:end]])])
-    text_obs_var = [L"\Delta X_{1, 1}^{(2)}", L"\Delta Y_{1, 2}^{(2)}", L"Z_1^{(2)}", L"\Delta Y_{2, 2}^{(2)}"]
+    text_obs_var = [L"\Delta Y_{1, 2}^{(2)}", L"\Delta Y_{1, 3}^{(2)}", L"Z_1^{(2)}", L"\Delta Y_{2, 2}^{(2)}"]
     for i in 1:length(ps2)-1
         arrows2d!(ax2, ps2[i], ps2[i+1],
         argmode = :endpoint,
@@ -827,6 +827,24 @@ fig = Figure(resolution = (1920, 1080))
     text_virtual_var = [L"\Delta X_{1, 1}^{(1)}", L"\Delta X_{1, 2}^{(1)}", L"\Delta X_{1, 3}^{(1)}", L"\Delta X_{2, 1}^{(1)}", L"\Delta X_{2, 2}^{(1)}", L"\Delta X_{3, 1}^{(1)}", L"\Delta X_{4, 1}^{(1)}", L"\Delta X_{4, 2}^{(1)}", L"\Delta X_{5, 1}^{(1)}", L"\Delta X_{5, 2}^{(1)}", L"\Delta X_{5, 3}^{(1)}"]
     for i in 1:length(ps)-1
         arrows2d!(ax3, ps[i], ps[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+    end
+
+    # virtual increments for the sole last observations of the first characteristic
+    ps1=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char1[2:end]])])
+    for i in 1:length(ps1)-1
+        arrows2d!(ax1, ps1[i], ps1[i+1],
+        argmode = :endpoint,
+        tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
+        )
+    end
+
+    # virtual increments for the sole last observations of the second characteristic
+    ps2=Point2f.([(t, 0) for t in vcat(0., inspection_dates[I_char2[2:end]])])
+    for i in 1:length(ps2)-1
+        arrows2d!(ax2, ps2[i], ps2[i+1],
         argmode = :endpoint,
         tail = Point2f[(0, 0), (1, -0.5), (1, 0.5)], taillength = 8
         )

@@ -8,21 +8,24 @@ export rand, rand!
 export MaintenancesPlot, DegradationsPlot, QuantilesPlot, plot!
 export loglikelihood, fit_mle, fit_mle!, confint
 
-include("Tools.jl")
-include("DataSet.jl")
-include("Models.jl")
-include("Simulation.jl")
-include("Plot.jl")
-include("mle_ardinfinity.jl")
-include("mle_ard1.jl")
+include("dataset.jl")
 
-#include("multidim_models.jl")
-include("multidim_objects.jl")
-include("multidim.jl")
-include("multidim_data_simu.jl")
+include("unidim_models.jl")
+include("unidim_tools_laurent.jl")
+include("unidim_simulation.jl")
+include("unidim_mle_ardinfinity.jl")
+include("unidim_mle_ard1.jl")
 
-include("nl_simulation.jl")
-include("nl_mle.jl")
+include("nonlinear_unidim_models.jl")
+include("nonlinear_unidim_simulation.jl")
+include("nonlinear_unidim_mle_ardinfinity.jl")
+include("nonlinear_unidim_mle_ard1.jl")
 
+include("multidim_models.jl")
+include("multidim_tools.jl")
+include("multidim_simulation_dataset.jl")
+include("multidim_mle.jl")
+
+include("plot.jl")
 
 end

@@ -1,6 +1,6 @@
 # The 2 following functions exists to find the upper nearest of τ element of time 
 function nearest_time(τ::Float64, time::Vector{Float64})
-
+    
     #approximate τ by the the first index of time above τ
     time_stop_index = 1
     while τ > time[time_stop_index]

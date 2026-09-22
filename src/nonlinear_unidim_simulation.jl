@@ -1,5 +1,3 @@
-abstract type NLWienerARD end
-
 #####TRAJECTOIRE D'UN PROCESSUS DE WIENER#####
 function nl_wiener_rand(nlwienerard::NLWienerARD, time::Vector{Float64})
     k = length(time)
@@ -13,26 +11,6 @@ function nl_wiener_rand(nlwienerard::NLWienerARD, time::Vector{Float64})
 
     return cumsum(vcat(0., X))
 end
-
-mutable struct NLWienerARD1 <: NLWienerARD
-    drift::Float64
-    dispertion::Float64
-    power_drift::Float64
-    power_dispersion::Float64
-    efficiencies::Dict{Union{Symbol, String}, Float64}
-end
-
-NLWienerARD1(; μ::Float64=1., σ::Float64=1., α::Float64=1., β::Float64=1., ρ = Dict(:M => 0.)) = NLWienerARD1(μ, σ, α, β, ρ)
-
-mutable struct NLWienerARD∞ <: NLWienerARD
-    drift::Float64
-    dispertion::Float64
-    power_drift::Float64
-    power_dispersion::Float64
-    efficiencies::Dict{Union{Symbol, String}, Float64}
-end
-
-NLWienerARD∞(; μ::Float64=1., σ::Float64=1., α::Float64=1., β::Float64=1., ρ = Dict(:M => 0.)) = NLWienerARD∞(μ, σ, α, β, ρ)
 
 # Works only if there is no before nor after maintenance observation
 function rand!(nlwienerard::NLWienerARD, degradationdata::DegradationData)
@@ -76,8 +54,6 @@ function rand!(nlwienerard::NLWienerARD, degradationdata::DegradationData)
     return degradationdata
 end
 
-
-
 # Same function as abosve with just a sample of inspection dates and maintenance dates
 function rand(nlwienerard::NLWienerARD, inspection_dates::Vector{Float64}, maint::DataFrame)
 
@@ -117,37 +93,4 @@ function rand(nlwienerard::NLWienerARD, inspection_dates::Vector{Float64}, maint
     deg = Y[deg_index]
 
     return deg
-end
-
-
-
-#####The 2 following functions exists to find the upper nearest of τ element of time 
-function nearest_time(τ::Float64, time::Vector{Float64})
-    #approximate τ by the the first index of time above τ
-    time_stop_index = 1
-    while τ > time[time_stop_index]
-        time_stop_index += 1
-    end
-
-    return time_stop_index
-end
-
-function nearest_time(τ::Vector{Float64}, time::Vector{Float64})
-    #the process is constructed by induction and thus all time stops need to be sorted
-    τ_sort = sort(τ)
-
-    #creation of variables for the next step
-    n = length(τ)
-    time_stop_index = 1
-    time_stop_indices = ones(Int, n)
-
-    #approximate τ_sort by the the first index of time above τ_sort[i]    
-    for i ∈ 1:n
-        while τ_sort[i] > time[time_stop_index]
-            time_stop_index += 1
-        end
-        time_stop_indices[i] = time_stop_index 
-    end
-
-    return time_stop_indices
 end

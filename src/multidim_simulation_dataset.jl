@@ -14,16 +14,20 @@ function mw_rand(mvw::MvWienerAR, inspection_dates::Vector{Float64})
     μ = [mvw.drift[indicator] for indicator in indicators]
     Σ = [mvw.covariances[(ind1, ind2)] for ind1 in indicators, ind2 in indicators]
 
-    #time increments
-    Δt = diff(inspection_dates)
+    # time increments 
+    Δt = diff(vcat([0.], inspection_dates))
 
-    #simulation of the increments of the process according to the distribution of the increments of a Wiener process with drift
-    X = [Δtij > 0 ? rand(MvNormal(Δtij * μ, sqrt(Δtij) * Σ)) : zeros(length(μ)) for Δtij in Δt]
+    # simulation of the increments of the process according to the distribution of the increments of a Wiener process with drift
+    # defined with a condition to avoid the case where an element of Δt is equal to 0, which would lead to the covariance matrix being semi definite and thus non invertible
+    normal_sample = [Δtij > 0 ? rand(MvNormal(Δtij * μ, sqrt(Δtij) * Σ)) : zeros(length(μ)) for Δtij in Δt]
 
-    #to have a matrix with each column corresponding to a time step
-    reducedX = reduce(hcat, vcat([zeros(length(μ))], X))
+    # to have a matrix with each column corresponding to a time step
+    reduced_normal_sample = reduce(hcat, vcat([zeros(length(μ))], normal_sample))
+    X_vect = cumsum(reduced_normal_sample, dims=2)[ :, 2:end]
 
-    return cumsum(reducedX, dims=2)
+    X_dict = Dict(indicators[p] => X_vect[p, :] for p in eachindex(indicators))
+
+    return X_dict
 end
 
 """
@@ -33,51 +37,58 @@ Simulate a wiener process with drift according to the parameters of `mward` at t
 
 The simulation is done by simulating firstly an unmaintained process with `mw_rand` and then by adjusting the values of the process after each maintenance according to the type of maintenance and the corresponding efficiency given in `mward`.
 
-Does not work currently for after and before cases.
+Simulate also the degradation level value just before the maintenance action and just after the maintenance action.
+
+Assumes that the intersection of maintenance dates and maintenance dates is empty.
 """
-function rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::DataFrame)
+function rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::DataFrame; delete_before_after = false)
 
     # Create time vector with tags to track element types
-    n_deg = length(inspection_dates)
     n_maint = nrow(maintenances)
-    time = vcat(0., inspection_dates, maintenances.DATE)
-    time_types = vcat(:maint, fill(:deg, n_deg), fill(:maint, n_maint))
-
-    # Extract model parameters and data
-    ρ = mvw.efficiencies
-    r = length(mvw.drift)
-    deg = Matrix{Float64}(undef, r, n_deg)
-    indicators = collect(keys(mvw.drift))
+    time = vcat(0., setdiff(inspection_dates, maintenances.DATE), maintenances.DATE, maintenances.DATE)
+    time_types = vcat(:after, fill(:deg, length(setdiff(inspection_dates, maintenances.DATE))), fill(:before, n_maint), fill(:after, n_maint))
 
     # Sort time and track types
     ordered_time_index = sortperm(time)
     ordered_time = time[ordered_time_index]
     ordered_time_types = time_types[ordered_time_index]
 
-    # Find positions of maintenance and degradation dates in sorted array
-    maint_index = findall(==(Symbol(:maint)), ordered_time_types)
+    # Find positions of maintenance and degradation dates in the sorted array ordered_time
+    before_index = findall(==(Symbol(:before)), ordered_time_types)
+    after_index = findall(==(Symbol(:after)), ordered_time_types)
     deg_index = findall(==(Symbol(:deg)), ordered_time_types)
 
     # Generate Wiener process values at all time points
     Y = mw_rand(mvw, ordered_time)
 
+    # Extract model parameters and data
+    ρ = mvw.efficiencies
+
+    # deg = Matrix{Float64}(undef, r, n_deg)
+    indicators = collect(keys(mvw.drift))
+
     # Adjust for maintenance effects
-    for i in eachindex(maint_index[1:end-1])
-        for j in eachindex(indicators)
-            if typeof(ρ[(indicators[j], maintenances[i, "TYPE"])]) == ARD1
-                a = Y[j, maint_index[i + 1]] - Y[j, maint_index[i]]
+    for indicator in indicators
+        for i in eachindex(before_index)[1:end]
+            if typeof(ρ[(indicator, maintenances[i, "TYPE"])].model) == ARD1
+                a = Y[indicator][before_index[i]] - Y[indicator][after_index[i]]
             else
-                a = Y[j, maint_index[i + 1]]
+                a = Y[indicator][before_index[i]]
             end
-            ρui = ρ[(indicators[j], maintenances[i, "TYPE"])].value
-            Y[j, maint_index[i+1]:end] .-= ρui * a
+            ρui = ρ[(indicator, maintenances[i, "TYPE"])].value
+            println("aft", Y[indicator][after_index[i]])
+            println("bef", Y[indicator][before_index[i] - 1])
+            Y[indicator][after_index[i + 1]:end] .-= ρui * a
         end
     end
 
-    # Extract degradation values at inspection dates to delete information related to maintenances
-    deg = Y[:, deg_index]
+    if delete_before_after
+        for indicator in indicators
+            Y[indicator] = Y[indicator][deg_index]
+        end
+    end
 
-    return deg
+    return Y
 end
 
 """
@@ -89,11 +100,38 @@ The simulation is done by simulating firstly an unmaintained process with `mw_ra
 """
 function rand!(mvw::MvWienerAR, degradationdata::DegradationData)
     
-    values = rand(mvw, unique(degradationdata.degradations, [:DATE, :NB_MAINTENANCES]).DATE, degradationdata.maintenances)
+    maintenances = degradationdata.maintenances
+    degradations = degradationdata.degradations
+    indicators = collect(keys(mvw.drift))
+    r = length(indicators)
 
-    degradationdata.degradations.VALUE = reshape(values, :)
+    inspection_dates = time_subdivisions(degradations, maintenances; inspec_maint = true)
 
-    return degradationdata
+    # Degradations with a column VALUE and a column INDICATOR to precise what indicator does the value refers to
+    degradations2 = DataFrame(DATE = Vector{Float64}([]), VALUE = Vector{Float64}([]), TYPE = Vector{Symbol}([]), NB_MAINTENANCES = Vector{Int64}([]))
+    
+    maint_dates = vcat([0.], maintenances.DATE, degradations.DATE[end])
+    for i in eachindex(maint_dates)[1:end-1]
+        row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+        Ni = length(inspection_dates[i - 1])
+        rows_between = DataFrame(DATE = vcat([inspection_dates[i - 1] for _ in indicators]...), VALUE = Vector{Float64}(undef, Ni * r), TYPE = reshape([indicator for _ in inspection_dates[i - 1], indicator in indicators], Ni * r), NB_MAINTENANCES = [i-1 for _ in 1:Ni * r])
+        if i != eachindex(maint_dates)[end-1]
+            row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
+        else
+            row_before = similar(rows_between, 0)
+        end
+        degradations2 = vcat(degradations2, row_after, rows_between, row_before)
+    end
+
+    values = rand(mvw, unique(degradationdata.degradations).DATE, degradationdata.maintenances)
+
+    for indicator in indicators
+        degradations2[degradations2.TYPE .== indicator, "VALUE"] .= values[indicator]
+    end
+
+    # degradationdata.degradations.VALUE = reshape(values, :)
+
+    return degradations2
 end
 
 """

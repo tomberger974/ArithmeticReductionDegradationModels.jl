@@ -60,7 +60,7 @@ end
 
 Returns a dictionary of Int64 going from 0 to the number of maintenance actions in degradationdata.
 
-Each entry i correspond to an Inter-Maintenance-Interval for which the dictionary returns a serie of latent time increments going from the date of the maintenance action occuring at the start of the IMI to the date of the maintenance action occuring at the end of the IMI.
+Each entry i correspond to an Inter-Maintenance-Interval for which the dictionary returns a serie of dates going from the date of the maintenance action occuring at the start of the IMI to the date of the maintenance action occuring at the end of the IMI.
 """
 function time_subdivisions(deg::DataFrame, maint::DataFrame; inspec_maint = false::Bool)
     return Dict(i => time_subdivision(deg, maint, i; inspec_maint = inspec_maint) for i in 0:nrow(maint))

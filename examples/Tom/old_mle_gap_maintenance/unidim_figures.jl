@@ -279,8 +279,8 @@ fig = Figure()
     ylims!(0., 25.)
     
     display(fig)
-save("C:\\Users\\bergerto\\Documents\\PhD\\Latex\\pics\\degradation_process_plus_observations_illustration_incrment_plus_jump.png", fig)
-
+save("degradation_process_plus_observations_illustration_incrment_plus_jump.png", fig)
+display(fig)
 
 
 #####gaps between maintenances#####

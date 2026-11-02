@@ -16,15 +16,14 @@ maintenance_types = ["M", "C"]
 ρ = Dict((ind, mt) => ARD.Efficiency(.5, ind == :ind1 ? ARD.ARD1() : ARD.ARDinf()) for ind in indicators, mt in maintenance_types)
 mvw = ARD.MvWienerAR(drift = μ, covariances = Σ, efficiencies = ρ)
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 1, τ_types = [maintenance_types[1], maintenance_types[2]], deletion=false, before=false, after = false)
+degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 3, τ_types = [maintenance_types[1], maintenance_types[2]], deletion=false, before=true, after = true)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
-filter(row -> row.TYPE == "C", maint)[1, "DATE"] = 3.
-maint.DATE .> 2.
+
 ARD.rand!(mvw, degradationdata)
+filter!(row -> row.DATE ∉ maint.DATE, deg)
 filter!(row -> row.NB_MAINTENANCES != 0 || row.TYPE != :ind1, degradationdata.degradations)
-delete!([1, 2, 3])
-reshape([1.0 for i in 1:2, j in 1:2], 4)
+
 
 ARD.ARDmatrix(degradationdata, mvw)
 ARD.ARDmatrix(degradationdata, mvw)[:ind1]

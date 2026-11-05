@@ -16,7 +16,7 @@ maintenance_types = ["M", "C"]
 ρ = Dict((ind, mt) => ARD.Efficiency(.5, ind == :ind1 ? ARD.ARD1() : ARD.ARDinf()) for ind in indicators, mt in maintenance_types)
 mvw = ARD.MvWienerAR(drift = μ, covariances = Σ, efficiencies = ρ)
 
-degradationdata = ARD.DegradationData(mvw; K = 2, N_i = 3, τ_types = [maintenance_types[1], maintenance_types[2]], deletion=false, before=true, after = true)
+degradationdata = ARD.DegradationData(mvw; K = 4, N_i = 5, deletion=false, before=true, after = true)
 deg = degradationdata.degradations
 maint = degradationdata.maintenances
 

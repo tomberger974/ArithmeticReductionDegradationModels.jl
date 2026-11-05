@@ -183,8 +183,6 @@ function loglikelihood(degradationdata::DegradationData, mvw::MvWienerAR)
     # Observed increments
     Y = reduce(vcat, [diff(vcat(0., sort(filter(row -> row.TYPE == ind, deg), :DATE).VALUE)) for ind in indicators])
 
-    println(deg)
-
     return logpdf(MvNormal(μ_O, Σ_O), Y)
 end
 

@@ -39,7 +39,7 @@ The simulation is done by simulating firstly an unmaintained process with `mw_ra
 
 Simulate also the degradation level value just before the maintenance action and just after the maintenance action.
 
-Assumes that the intersection of maintenance dates and maintenance dates is empty.
+Assumes that the intersection of maintenance dates and maintenance dates is empty. (Not sure about that, need to check it)
 """
 function rand(mvw::MvWienerAR, inspection_dates::Vector{Float64}, maintenances::DataFrame; delete_before_after = false)
 
@@ -121,7 +121,7 @@ function rand(mvw::MvWienerAR, degradationdata::DegradationData)
         degradations2 = vcat(degradations2, row_after, rows_between, row_before)
     end
 
-    values = rand(mvw, unique(degradationdata.degradations).DATE, degradationdata.maintenances)
+    values = rand(mvw, unique(degradationdata.degradations).DATE, degradationdata.maintenances; delete_before_after=false)
 
     for indicator in indicators
         degradations2[degradations2.TYPE .== indicator, "VALUE"] .= values[indicator]
@@ -129,11 +129,11 @@ function rand(mvw::MvWienerAR, degradationdata::DegradationData)
 
     # degradationdata.degradations.VALUE = reshape(values, :)
 
-    return degradations2[degradations2.TRUC .== true, Not(:TRUC)]
+    return DegradationData(maintenances, degradations2[degradations2.TRUC .== true, Not(:TRUC)])
 end
 
 function rand!(mvw::MvWienerAR, degradationdata::DegradationData)
-    degradationdata.degradations = rand(mvw, degradationdata)
+    degradationdata.degradations = rand(mvw, degradationdata).degradations
 end
 
 """
@@ -175,18 +175,18 @@ function delete_observations!(degradationdata::DegradationData)
 end
 
 """
-    DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], before::Bool=false, after::Bool=false, deletion::Bool=false)
+    DegradationData(mvw::MvWienerAR; nb_maint = 3, nb_inspec_per_IMI = 5, inspec_period = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), nb_maint), indicators = [Symbol("ind", i) for i in 1:length(mvw.drift)], before::Bool=false, after::Bool=false, deletion::Bool=false)
     
 Return a DegradationData instance with simulated degradation data according to the multidimensional Wiener process with drift and ARD maintenance model `mvw`.
 
-The simulation is done on a time grid of length `K` with `N_i` time steps between each maintenance, and a time increment of `Δt`.
+The simulation is done on a time grid with `nb_maint` maintenance actions and `nb_inspec_per_IMI` inspections every 'inspec_period' time increment between each maintenance action.
 
-May contain observations just before or just after the maintenance.
+May contain observations just before or just after the maintenance depending on the values of .
 """
-function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), K), indicators = collect(keys(mvw.drift)), before::Bool=false, after::Bool=false, deletion::Bool=false)
+function DegradationData(mvw::MvWienerAR; nb_maint = 3, nb_inspec_per_IMI = 5, inspec_period = 1., τ_types = rand(Set(k[2] for k in keys(mvw.efficiencies)), nb_maint), indicators = collect(keys(mvw.drift)), before::Bool=false, after::Bool=false, deletion::Bool=false)
     r = length(mvw.drift)
-    τ = convert(Vector{Float64}, [j*Δt*(N_i + 1) for j in 1:K])
-    T = convert(Float64, τ[end] + Δt*N_i)
+    τ = convert(Vector{Float64}, [j*inspec_period*(nb_inspec_per_IMI + 1) for j in 1:nb_maint])
+    T = convert(Float64, τ[end] + inspec_period*nb_inspec_per_IMI)
 
     # Maintenances with a column DATE and a column VALUE
     maintenances = DataFrame(DATE = τ, TYPE = τ_types)
@@ -194,15 +194,15 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
     degradations = DataFrame(DATE = Vector{Float64}([]), VALUE = Vector{Float64}([]), TYPE = Vector{Symbol}([]), NB_MAINTENANCES = Vector{Int64}([]))
     
     # Depending on the values of before and after create a degradations object with observations just before or just after maintenance actions
-    maint_dates = vcat([0.], τ, T + Δt)
+    maint_dates = vcat([0.], τ, T + inspec_period)
     if !after & !before
         for i in eachindex(maint_dates)[1:end-1]
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+inspec_period:inspec_period:maint_dates[i+1]-inspec_period, r)...), VALUE = Vector{Float64}(undef, nb_inspec_per_IMI*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:inspec_period:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in nb_inspec_per_IMI*r])
             degradations = vcat(degradations, rows_between)
         end
     elseif !after & before
         for i in eachindex(maint_dates)[1:end-1]
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+inspec_period:inspec_period:maint_dates[i+1]-inspec_period, r)...), VALUE = Vector{Float64}(undef, nb_inspec_per_IMI*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:inspec_period:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in nb_inspec_per_IMI*r])
             if i != eachindex(maint_dates)[end-1]
                 row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
             else
@@ -213,13 +213,13 @@ function DegradationData(mvw::MvWienerAR; K = 3, N_i = 5, Δt = 1., τ_types = r
     elseif after & !before
         for i in eachindex(maint_dates)[1:end-1]
             row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+inspec_period:inspec_period:maint_dates[i+1]-inspec_period, r)...), VALUE = Vector{Float64}(undef, nb_inspec_per_IMI*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:inspec_period:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in nb_inspec_per_IMI*r])
             degradations = vcat(degradations, row_after, rows_between)
         end
     else
         for i in eachindex(maint_dates)[1:end-1]
             row_after = DataFrame(DATE = [maint_dates[i] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
-            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+Δt:Δt:maint_dates[i+1]-Δt, r)...), VALUE = Vector{Float64}(undef, N_i*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:Δt:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in N_i*r])
+            rows_between = DataFrame(DATE = vcat(fill(maint_dates[i]+inspec_period:inspec_period:maint_dates[i+1]-inspec_period, r)...), VALUE = Vector{Float64}(undef, nb_inspec_per_IMI*r), TYPE = vcat([[indicators[i] for _ in maint_dates[i]+1:inspec_period:maint_dates[i+1]-1] for i in 1:r]...), NB_MAINTENANCES = [i-1 for _ in nb_inspec_per_IMI*r])
             if i != eachindex(maint_dates)[end-1]
                 row_before = DataFrame(DATE = [maint_dates[i+1] for _ in indicators], VALUE = Vector{Float64}(undef, r), TYPE = indicators, NB_MAINTENANCES = [i-1 for _ in r])
             else

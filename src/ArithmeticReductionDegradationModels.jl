@@ -7,6 +7,7 @@ export DegradationData, maintenances, degradations, maintenances!, degradations!
 export rand, rand!
 export MaintenancesPlot, DegradationsPlot, QuantilesPlot, plot!
 export loglikelihood, fit_mle, fit_mle!, confint
+export MvWienerAR
 
 include("dataset.jl")
 
@@ -23,8 +24,9 @@ include("nonlinear_unidim_mle_ard1.jl")
 
 include("multidim_models.jl")
 include("multidim_tools.jl")
-include("multidim_simulation_dataset.jl")
+include("multidim_data_simu.jl")
 include("multidim_mle.jl")
+include("multidim_estim_simu.jl")
 
 include("plot.jl")
 

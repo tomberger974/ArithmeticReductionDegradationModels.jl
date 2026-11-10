@@ -144,3 +144,17 @@ function Base.show(io::IO, mvw::MvWienerAR)
 
     print(io, ")")
 end
+
+
+"""
+    param(estimation_set::ArithmeticReductionDegradationModels.MvWienerAR,prop::Symbol;sel::Union{Symbol, Tuple{Union{String, Symbol}, Union{String, Symbol}}})
+
+Return the corresponding parameters of an MvWienerAR object.
+
+Examples
+param(mvw, :drift, :ind1) = mvw.drift[:ind1]
+param(mvw, :covariances, (:ind1, :ind1)) = mvw.covariances[(:ind1, :ind1)]
+"""
+function param(estimation_set::MvWienerAR, prop::Symbol; sel::Union{Symbol, Tuple{Union{String, Symbol}, Union{String, Symbol}}})
+    return get(getproperty(estimation_set, prop), sel, nothing)
+end

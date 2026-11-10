@@ -13,7 +13,3 @@ function tests(true_mvw::MvWienerAR, degradationdata::DegradationData, N::Int64)
 
     return estimations
 end
-
-function param(estimation_set::ArithmeticReductionDegradationModels.MvWienerAR,prop::Symbol;sel::Union{Symbol, Tuple{Union{String, Symbol}, Union{String, Symbol}}})
-    return get(getproperty(estimation_set,prop),sel,nothing)
-end

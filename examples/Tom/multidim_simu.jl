@@ -62,9 +62,14 @@ vec_cov21 = ARD.param.(truc, :covariances, sel = (:ind2, :ind1))
 vec_cov22 = ARD.param.(truc, :covariances, sel = (:ind2, :ind2))
 
 # Efficiencies estimations vectors
-vec_eff1P = ARD.param.(truc, :efficiencies, sel = (:ind1, "P"))
-vec_eff2P = ARD.param.(truc, :efficiencies, sel = (:ind2, "P"))
+vec_eff1P = getproperty.(ARD.param.(truc, :efficiencies, sel = (:ind1, "P")), :value)
+vec_eff2P = getproperty.(ARD.param.(truc, :efficiencies, sel = (:ind2, "P")), :value)
 
+sum()
+
+### BOXPLOTS TO REPRESENT THE ESTIMATIONS
+
+# Drift boxplots
 fig = Figure()
     ax1 = Axis(
         fig[1,1],
@@ -82,34 +87,36 @@ fig = Figure()
     boxplot!(ax2, ones(length(vec_drift2)),vec_drift2)
     linkyaxes!(ax1, ax2)
     fig
+    save("/Users/berger/Documents/latex/pics//multidim_simu1_drift_box.png", fig)
 
 
 
+# Covariances boxplots
 fig = Figure()
     ax11 = Axis(
         fig[1,1],
         xticklabelsvisible = false,
         xticksvisible = false,
-        title = "covariance 11"
+        title = L"c^{(1, 1)}"
         )
     ax12 = Axis(
         fig[1,2],
         xticklabelsvisible = false,
         xticksvisible = false,
-        title = "covariance 12"
+        title = L"c^{(1, 2)} = c^{(2, 1)}"
         )
     ax21 = Axis(
         fig[2,1],
         xticklabelsvisible = false,
         xticksvisible = false,
-        title = "covariance 21"
+        title = L"c^{(1, 2)} = c^{(2, 1)}"
         )
 
     ax22 = Axis(
         fig[2,2],
         xticklabelsvisible = false,
         xticksvisible = false,
-        title = "covariance 22"
+        title = L"c^{(2, 2)}"
         )
     boxplot!(ax11, ones(length(vec_cov11)),vec_cov11)
     boxplot!(ax12, ones(length(vec_cov12)),vec_cov12)
@@ -117,8 +124,9 @@ fig = Figure()
     boxplot!(ax22, ones(length(vec_cov22)),vec_cov22)
     linkyaxes!(ax11, ax12, ax21, ax22)
     fig
+    save("/Users/berger/Documents/latex/pics//multidim_simu1_cov_box.png", fig)
 
-
+# Efficiencies boxplots
 fig = Figure()
     ax1 = Axis(
         fig[1,1],
@@ -136,3 +144,4 @@ fig = Figure()
     boxplot!(ax2, ones(length(vec_eff2P)), vec_eff2P)
     linkyaxes!(ax1, ax2)
     fig
+    save("/Users/berger/Documents/latex/pics//multidim_simu1_rho_box.png", fig)
